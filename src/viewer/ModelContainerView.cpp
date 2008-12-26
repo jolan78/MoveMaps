@@ -233,7 +233,9 @@ namespace VMAP
           {
             if (iShowBoxes)
               {
-                rd->setColor (Color3::green ());
+              
+              	rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+                rd->setColor (Color4(0, 255, 0, 0.4f)/*Color3::green ()*/);
                 rd->beginIndexedPrimitives ();
                 rd->setVertexArray (*var);
                 rd->sendIndices (RenderDevice::QUADS, indexArray);
