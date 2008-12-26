@@ -28,6 +28,9 @@ namespace G3D {
 namespace _internal {
 pascal OSStatus OnWindowSized(EventHandlerCallRef handlerRef, EventRef event, void *userData);
 pascal OSStatus OnWindowClosed(EventHandlerCallRef handlerRef, EventRef event, void *userData);
+pascal OSStatus OnAppQuit(EventHandlerCallRef handlerRef, EventRef event, void *userData);
+pascal OSStatus OnActivation(EventHandlerCallRef handlerRef, EventRef event, void *userData);
+pascal OSStatus OnDeactivation(EventHandlerCallRef handlerRef, EventRef event, void *userData);
 }
 
 class CarbonWindow : public GWindow {
@@ -67,10 +70,16 @@ private:
 	// Make Event Handlers Capable of Seeing Private Parts
 	friend pascal OSStatus _internal::OnWindowSized(EventHandlerCallRef handlerRef, EventRef event, void *userData);
 	friend pascal OSStatus _internal::OnWindowClosed(EventHandlerCallRef handlerRef, EventRef event, void *userData);
+    friend pascal OSStatus _internal::OnAppQuit(EventHandlerCallRef handlerRef, EventRef event, void *userData);
+    friend pascal OSStatus _internal::OnActivation(EventHandlerCallRef handlerRef, EventRef event, void *userData);
+    friend pascal OSStatus _internal::OnDeactivation(EventHandlerCallRef handlerRef, EventRef event, void *userData);
 	
 	static EventTypeSpec _closeSpec;
 	static EventTypeSpec _resizeSpec;
-	
+	static EventTypeSpec _appQuitSpec[];
+    static EventTypeSpec _activateSpec[];
+    static EventTypeSpec _deactivateSpec[];
+
 	Array<GEvent>        _sizeEventInjects;
 
 	void injectSizeEvent(int width, int height) {
@@ -95,6 +104,9 @@ private:
 	explicit CarbonWindow(const GWindow::Settings& settings, WindowRef window);
 	
 	CarbonWindow& operator=(const CarbonWindow& other);
+
+	unsigned char CarbonWindow::makeKeyEvent(EventRef, GEvent&);
+	bool makeMouseEvent(OpaqueEventRef*, G3D::GEvent&);
 
 public:
 
@@ -163,6 +175,8 @@ protected:
 	virtual bool pollOSEvent(GEvent& e);
 	
 }; // CarbonWindow
+
+uint8 buttonsToUint8(const bool*);
 
 } // namespace G3D
 
