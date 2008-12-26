@@ -22,6 +22,8 @@
 #include <time.h>
 #ifdef G3D_WIN32
     #include "GLG3D/Win32Window.h"
+#elif defined(G3D_OSX)
+    #include "GLG3D/CarbonWindow.h"
 #else
     #include "GLG3D/SDLWindow.h"    
 #endif
@@ -229,6 +231,8 @@ void RenderDevice::init(
     deleteWindow = true;
     #ifdef G3D_WIN32
         init(Win32Window::create(_settings), log);
+    #elif defined(G3D_OSX)
+        init(CarbonWindow::create(_settings), log);
     #else
         init(new SDLWindow(_settings), log);
     #endif

@@ -11,9 +11,9 @@ main.cpp \
 ModelContainerView.h \
 ModelContainerView.cpp
 
-mmap_viewer_LDADD = -lSDL -lSDLmain -lmmaps -lvmaps -lGLG3D -lG3D -lSDL -lSDLmain -lzip -ljpeg -lpng12 -lGLU
+mmap_viewer_LDADD = @DISPLAY_MANAGER_LIBS@ -lmmaps -lvmaps -lGLG3D -lG3D -lzip -ljpeg -lpng12 -lGLU
 
-mmap_viewer_LDFLAGS = \
+mmap_viewer_LDFLAGS = @DISPLAY_MANAGER_LDFLAGS@ \
 -L$(top_builddir)/dep/src/GLG3D \
 -L$(top_builddir)/dep/src/zip \
 -L$(top_builddir)/dep/src/G3D \

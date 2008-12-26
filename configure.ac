@@ -20,6 +20,17 @@ no)  debug=false ;;
 *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
 esac],[debug=false])
 
+case $host_os in 
+    darwin*)
+        DISPLAY_MANAGER_LDFLAGS="-framework Cocoa -framework Carbon -framework OpenGL -framework GLUT -framework AGL";
+        DISPLAY_MANAGER_LIBS="";;
+    *)
+	    DISPLAY_MANAGER_LDFLAGS="";
+	    DISPLAY_MANAGER_LIBS="-lSDL -lSDLmain";;
+esac
+AC_SUBST(DISPLAY_MANAGER_LDFLAGS)
+AC_SUBST(DISPLAY_MANAGER_LIBS)
+
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
 AC_CONFIG_FILES([
