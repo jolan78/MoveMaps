@@ -775,6 +775,7 @@ namespace VMAP
           {
             if (connected)
               pPrevMoveLayer->RemoveVal (moveLayer);
+            
             delete moveLayer;
           }
       }

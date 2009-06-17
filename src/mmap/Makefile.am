@@ -13,6 +13,8 @@ MoveMapAreaFinder.cpp \
 MoveMapAreaFinder.h \
 MoveMapBox.cpp \
 MoveMapBox.h \
+MoveZone.cpp \
+MoveZone.h \
 MoveMapBoxContainer.cpp \
 MoveMapBoxContainer.h \
 MoveMapGenerator.cpp \

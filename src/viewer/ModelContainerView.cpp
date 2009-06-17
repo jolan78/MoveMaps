@@ -28,12 +28,14 @@ namespace VMAP
   iVMapManager ()
   {
     i_App = this;
-    iShowSky = true;
+    iShowSky = false;
     iShowMMaps = true;
     iShowVMaps = true;
     iShowBoxes = false;
-
-    iVARAreaRef = VARArea::create (settings.window.width * settings.window.height * 60);
+    iShowZones = false;
+    iShowPortals = false;
+    
+    iVARAreaRef = VARArea::create (settings.window.width * settings.window.height * 60 * 40); // thats huge !
 
     iMap = mapId;
     ix = x;
@@ -168,6 +170,9 @@ namespace VMAP
         offset += vArray.size ();
         //break;
       }
+    
+    printf("Load %d ModelContainer vertices to %s\n",iGlobArray.size(),pName.c_str());
+
     iTriVarTable.set (pName, new VAR (iGlobArray, iVARAreaRef));
     iTriIndexTable.set (pName, iIndexArray);
   }
@@ -212,13 +217,14 @@ namespace VMAP
     rd->setLight (0, light);
 
     Array<std::string > keys = iTriVarTable.getKeys ();
+    keys.sort();
     Array<std::string>::ConstIterator i = keys.begin ();
     while (i != keys.end ())
       {
         VAR* var = iTriVarTable.get (*i);
         Array<int> indexArray = iTriIndexTable.get (*i);
         const std::string& name = *i;
-        if ((name.compare ("moveMaps") == 0) || (name.compare ("moveMaps2") == 0))
+        if (name.find ("1_moveMaps",0) != std::string::npos)
           {
             if (iShowMMaps)
               {
@@ -229,16 +235,58 @@ namespace VMAP
                 rd->endIndexedPrimitives ();
               }
           }
-        else if (name.compare ("boundingBoxes") == 0)
+        else if (name.find ("5_boundingBoxes",0) != std::string::npos)
           {
             if (iShowBoxes)
               {
               
-              	rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+                rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
                 rd->setColor (Color4(0, 255, 0, 0.4f)/*Color3::green ()*/);
                 rd->beginIndexedPrimitives ();
                 rd->setVertexArray (*var);
                 rd->sendIndices (RenderDevice::QUADS, indexArray);
+                rd->endIndexedPrimitives ();
+              }
+          }
+        else if (name.find ("4_zones",0) != std::string::npos)
+          {
+            if (iShowZones)
+              {
+              
+                rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+                rd->setColor (Color4(255, 255, 0, 0.4f));
+
+                rd->beginIndexedPrimitives ();
+                rd->setVertexArray (*var);
+                rd->sendIndices (RenderDevice::QUADS, indexArray);
+                rd->endIndexedPrimitives ();
+              }
+          }
+        else if (name.find ("2_portals",0) != std::string::npos)
+          {
+            if (iShowPortals)
+              {
+              
+                //rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+                rd->setColor (Color3(0, 255, 0));
+
+                rd->beginIndexedPrimitives ();
+                rd->setVertexArray (*var);
+                rd->sendIndices (RenderDevice::LINES, indexArray);
+                rd->endIndexedPrimitives ();
+              }
+          }
+        else if (name.find ("3_badportals",0) != std::string::npos)
+          {
+            if (iShowPortals)
+              {
+              
+                //rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+                rd->setColor (Color3(255, 0, 0));
+
+                rd->beginIndexedPrimitives ();
+                rd->setVertexArray (*var);
+                rd->sendIndices (RenderDevice::LINES, indexArray);
                 rd->endIndexedPrimitives ();
               }
           }
@@ -290,6 +338,36 @@ namespace VMAP
   //===================================================
 
   void
+  ModelContainerView::addGrid ( int iMap, int x, int y )
+  {
+    loadAndShowTile (iMap, x, y);
+    
+    
+    ManagedModelContainer* mc = 0;
+    std::string dirFileName = iVMapManager.getDirFileName (iMap, x, y);
+    MapTree* mt = iVMapManager.getInstanceMapTree (iMap);
+    if (!mt->hasDirFile (dirFileName))
+      dirFileName = iVMapManager.getDirFileName (iMap);
+    if (mt->hasDirFile (dirFileName))
+      {
+        Array<std::string> fileNames = mt->getDirFiles (dirFileName).getFiles ();
+        for (int i = 0; i < fileNames.size (); ++i)
+          {
+            std::string name = fileNames[i];
+            mc = mt->getModelContainer (name);
+            break;
+          }
+      }
+    
+    // show the mmaps
+    addMoveMapToDisplay (iMap, x, y);
+    
+    consolePrintf("Loaded %d-%d",x,y);
+  }
+
+  //===================================================
+
+  void
   ModelContainerView::addMoveMapToDisplay ( int mapId, int x, int y )
   {
     // Create a MoveMapContainer that represents the tile
@@ -297,6 +375,9 @@ namespace VMAP
     MoveMapContainer moveMapBoxContainer;
     // Show the bounding boxes of the MoveMapBoxes
     Array<Box> gBoxArray;
+    Array<Box> gZoneArray;
+    Array<Vector3> gPortalArray;
+    Array<Vector3> gBadPortalArray;
     
     // for the file name
     char buffer[50];
@@ -348,16 +429,28 @@ namespace VMAP
               }
           }
       }
-
-    std::string name ("moveMaps2");
     
+    char name[30];
+    sprintf(name,"1_moveMaps2_%d-%d",x,y);
+    /*name+="_";
+    name+=x+0x30;
+    name+="-";
+    name+=y+0x30;*/
+    printf("Load %d MoveMaps Points vertices to %s\n",vArray.size(),name);
+
     iTriVarTable.set (name, new VAR (vArray, iVARAreaRef));
     iTriIndexTable.set (name, iArray);
     
     // Add the Bounding boxes
     Array<int> ibArray;
     Array<Vector3> vbArray;
-    name = "boundingBoxes";
+    sprintf(name,"5_boundingBoxes_%d-%d",x,y);
+    /*name = "boundingBoxes";
+    name+="_";
+    name+=x+0x30;
+    name+="-";
+    name+=y+0x30;*/
+    
     count = 0;
     
     for(Array<Box>::Iterator iter = gBoxArray.begin (); iter != gBoxArray.end (); ++iter)
@@ -441,9 +534,227 @@ namespace VMAP
         count += 8;
       }
     
+    printf("Load %d MapBox vertices\n",vbArray.size());
     iTriVarTable.set (name, new VAR (vbArray, iVARAreaRef));
     iTriIndexTable.set (name, ibArray);
-  }
+    
+    iMoveZoneContainer = moveMapBoxContainer.getMoveZoneContainer();
+    //const Vector3 basePos = iMoveZoneContainer->getBasePosition ();
+    //printf("ZoneContainer at %f,%f,%f\n",basePos.x,basePos.z,basePos.y);
+    Array<MoveZone*> iMoveZoneArray=iMoveZoneContainer->getMoveZoneArray();
+    for (unsigned int j = 0; j< iMoveZoneArray.size(); j++)
+      {
+      const MoveZone* iMoveZone=iMoveZoneArray[j];
+      const AABox& b = iMoveZone->getBounds();
+      AABox ab ;
+      ab.set(Vector3(b.low().x, b.low().z, b.low().y), Vector3(b.high().x, b.high().z, b.high().y));
+      //ab = ab + Vector3 (basePos.x,basePos.y,basePos.z);// FIXME : hack ?
+      //DEBUG: printf("Zone at %f,%f %f\n",ab.low().x,ab.low().z,ab.low().y);
+      
+      if (j==94)
+        setViewPosition (Vector3((b.low().x+b.high().x)/2, (b.low().z+b.high().z)/2, (b.low().y+b.high().y)/2));
+      
+      gZoneArray.push_back(Box(ab));
+      const Array<MovePortal*> portals = iMoveZone->getPortalArray();
+      //DEBUG: printf("%d portals\n",portals.size());
+     // if (iMoveZone->getIndex() == 0)
+        for (unsigned int p = 0; p< portals.size(); ++p)
+          {
+          //DEBUG: printf("portal %d at %f,%f %f\n",p,portals[p]->getLow().x,portals[p]->getLow().y,portals[p]->getLow().z);
+          Vector3 mylow=portals[p]->getLow();
+          Vector3 myhigh=portals[p]->getHigh();
+          if (portals[p]->getDirection() == EXTEND_N)
+              {
+              mylow.x-=0.3f;
+              myhigh.x+=0.3f;
+              mylow.y+=0.1f;
+              myhigh.y+=0.1f;
+              }
+          else if (portals[p]->getDirection() == EXTEND_S)
+              {
+              mylow.x-=0.3f;
+              myhigh.x+=0.3f;
+              mylow.y-=0.1f;
+              myhigh.y-=0.1f;
+              }
+          else if (portals[p]->getDirection() == EXTEND_E)
+              {
+              mylow.y-=0.3f;
+              myhigh.y+=0.3f;
+              mylow.x+=0.1f;
+              myhigh.x+=0.1f;
+              }
+          else if (portals[p]->getDirection() == EXTEND_W)
+              {
+              mylow.y-=0.3f;
+              myhigh.y+=0.3f;
+              mylow.x-=0.1f;
+              myhigh.x-=0.1f;
+              }
+          if (portals[p]->getDestination() == INT_MAX)
+              {
+              gBadPortalArray.push_back(Vector3(mylow.x,mylow.z,mylow.y));
+              gBadPortalArray.push_back(Vector3(myhigh.x,myhigh.z,myhigh.y));
+              }
+          else
+              {
+              gPortalArray.push_back(Vector3(mylow.x,mylow.z,mylow.y));
+              gPortalArray.push_back(Vector3(myhigh.x,myhigh.z,myhigh.y));
+              }
+          }
+      }
+    printf("added %i zones \n",gZoneArray.size());
+    
+    // Add the Zones
+    Array<int> izArray;
+    Array<Vector3> vzArray;
+
+    sprintf(name,"4_zones_%d-%d",x,y);
+    /*name = "zones";
+    name+="_";
+    name+=x+0x30;
+    name+="-";
+    name+=y+0x30;*/
+
+    count = 0;
+    
+    for(Array<Box>::Iterator iter = gZoneArray.begin (); iter != gZoneArray.end (); ++iter)
+      {
+        const Box& b = *iter;
+        for (int i = 0; i < 8; i++)
+          vzArray.append (b.corner (i));
+
+        // side 1
+        izArray.append (count);
+        izArray.append (count + 1);
+        izArray.append (count + 2);
+        izArray.append (count + 3);
+
+        // side 1 back
+        izArray.append (count + 3);
+        izArray.append (count + 2);
+        izArray.append (count + 1);
+        izArray.append (count);
+        
+        // side 2
+        izArray.append (count + 4);
+        izArray.append (count + 5);
+        izArray.append (count + 6);
+        izArray.append (count + 7);
+        
+        // side 2 back
+        izArray.append (count + 7);
+        izArray.append (count + 6);
+        izArray.append (count + 5);
+        izArray.append (count + 4);
+        
+        // side 3
+        izArray.append (count + 1);
+        izArray.append (count + 2);
+        izArray.append (count + 6);
+        izArray.append (count + 5);
+        
+        // side 3 back
+        izArray.append (count + 5);
+        izArray.append (count + 6);
+        izArray.append (count + 2);
+        izArray.append (count + 1);
+        
+        // side 4
+        izArray.append (count + 0);
+        izArray.append (count + 3);
+        izArray.append (count + 7);
+        izArray.append (count + 4);
+        
+        // side 4 back
+        izArray.append (count + 4);
+        izArray.append (count + 7);
+        izArray.append (count + 3);
+        izArray.append (count + 0);
+        
+        // side 5
+        izArray.append (count + 2);
+        izArray.append (count + 3);
+        izArray.append (count + 7);
+        izArray.append (count + 6);
+        
+        // side 5 back
+        izArray.append (count + 6);
+        izArray.append (count + 7);
+        izArray.append (count + 3);
+        izArray.append (count + 2);
+        
+        // side 6
+        izArray.append (count + 0);
+        izArray.append (count + 1);
+        izArray.append (count + 5);
+        izArray.append (count + 4);
+        
+        // side 6 back
+        izArray.append (count + 4);
+        izArray.append (count + 5);
+        izArray.append (count + 1);
+        izArray.append (count + 0);
+
+        count += 8;
+      }
+    
+    printf("Load %d MapZones vertices\n",vzArray.size());
+    iTriVarTable.set (name, new VAR (vzArray, iVARAreaRef));
+    iTriIndexTable.set (name, izArray);
+    
+    // Add the Portals
+    Array<int> ipArray;
+    Array<Vector3> vpArray;
+    
+    sprintf(name,"2_portals_%d-%d",x,y);
+/*
+    name = "portals";
+    name+="_";
+    name+=x+0x30;
+    name+="-";
+    name+=y+0x30;*/
+
+    count = 0;
+    
+    for(Array<Vector3>::Iterator iter = gPortalArray.begin (); iter != gPortalArray.end (); ++iter)
+      {
+        const Vector3& v = *iter;
+        vpArray.append (v);
+        ipArray.append (count++);
+      }
+    printf("Load %d portals vertices\n",vpArray.size());
+    iTriVarTable.set (name, new VAR (vpArray, iVARAreaRef));
+    iTriIndexTable.set (name, ipArray);
+
+    // Add Portals with dest not found
+    Array<int> ibpArray;
+    Array<Vector3> vbpArray;
+
+    sprintf(name,"3_badportals_%d-%d",x,y);
+
+    /*name = "badportals";
+    name+="_";
+    name+=x+0x30;
+    name+="-";
+    name+=y+0x30;*/
+
+    count = 0;
+    
+    for(Array<Vector3>::Iterator iter = gBadPortalArray.begin (); iter != gBadPortalArray.end (); ++iter)
+      {
+        const Vector3& v = *iter;
+        vbpArray.append (v);
+        ibpArray.append (count++);
+      }
+    printf("Load %d badportals vertices\n",vbpArray.size());
+    iTriVarTable.set (name, new VAR (vbpArray, iVARAreaRef));
+    iTriIndexTable.set (name, ibpArray);
+    
+    printf("total used : %dB , %dB (%f%%) free\n",iVARAreaRef->allocatedSize(),iVARAreaRef->freeSize(), 100.0f*iVARAreaRef->freeSize()/iVARAreaRef->totalSize());
+    if (100.0f*iVARAreaRef->freeSize()/iVARAreaRef->totalSize() < 10)
+      printf("#### WARNING ####\nless than 10%% memory remaining, you mays crash if you load more grids, see ModelContainerView::ModelContainerView to ajust available VARArea memory\n############\n");
+    }
   
   //===================================================
 
@@ -574,6 +885,16 @@ namespace VMAP
         iShowBoxes = !iShowBoxes;
       }
 
+    if (ui->keyPressed (GKey::fromString ("z")))
+      {
+        iShowZones = !iShowZones;
+      }
+
+    if (ui->keyPressed (GKey::fromString ("p")))
+      {
+        iShowPortals = !iShowPortals;
+      }
+
     if (ui->keyPressed (GKey::fromString ("h")))
       { //inc count1
 #if 0
@@ -588,6 +909,128 @@ namespace VMAP
 #endif
       }
   }
+
+  //===================================================
+
+  void
+  ModelContainerView::onConsoleCommand(const std::string& cmd)
+  {
+    Array<std::string> command = stringSplit(cmd,' ');
+    
+    if (command[0] == "exit")
+      {
+      setExitCode(0);
+      return;
+      }
+    
+    if (command[0] == "load")
+      {
+      if (command.size()==2 && command[1]=="*")
+        {
+        DIR* dirp=opendir(gMMapDataDir.c_str());
+        dirent* de;
+        unsigned int n=0;
+        while ((de = readdir(dirp)) != NULL)
+          {
+          std::string fname = de->d_name;
+          if (fname.find(".mmap") != std::string::npos)
+            {
+            int x = atoi(fname.substr(4,2).c_str());
+            int y = atoi(fname.substr(7,2).c_str());
+            addGrid(iMap, x, y);
+            n++;
+            // hardcoded width and height ...
+            if (100.0f*iVARAreaRef->freeSize()/iVARAreaRef->totalSize() < 8) //1024 * 768 * 60 > iVARAreaRef->freeSize()) //
+              {
+              consolePrintf("Had to stop loading due to memory after adding %u grids (defined in ModelContainerView::ModelContainerView)",n);
+              return;
+              }
+            }
+          }
+        closedir(dirp);
+        consolePrintf("loaded %u grids",n);
+        return;
+        }
+      if (command.size()<3)
+        {
+        consolePrintf("syntax error");
+        return;
+        }
+      int x=atoi(command[1].c_str());
+      int y=atoi(command[2].c_str());
+      
+      char buffer[255];
+      sprintf (buffer, "%s/%03u_%02u_%02u.mmap", gMMapDataDir.c_str(), iMap, x, y);
+      FILE* fp = fopen(buffer,"rb");
+      if (!fp)
+       {
+       consolePrintf("can't open mmap file %s (non-existent?)",buffer);
+       return;
+       }
+      fclose(fp);
+
+      addGrid(iMap, x, y);
+
+      return;
+      }
+    if (command[0] == "go")
+      {
+      if (command.size()<2)
+        {
+        consolePrintf("syntax error");
+        return;
+        }
+      if (command[1] == "zone")
+        {
+        if (command.size()<3)
+          {
+          consolePrintf("syntax error");
+          return;
+          }
+        unsigned int zoneid=atoi(command[2].c_str());
+        //iMoveZoneContainer = moveMapBoxContainer.getMoveZoneContainer();
+        Array<MoveZone*> iMoveZoneArray=iMoveZoneContainer->getMoveZoneArray();
+        
+        if (zoneid>=0 && zoneid<iMoveZoneArray.size())
+          {
+          const MoveZone* iMoveZone=iMoveZoneArray[zoneid];
+          const AABox& b = iMoveZone->getBounds();
+          //setViewPosition (Vector3((b.low().x+b.high().x)/2, (b.low().z+b.high().z)/2, (b.low().y+b.high().y)/2));
+          //rd->setProjectionAndCameraMatrix (defaultCamera);
+          defaultController->setPosition(Vector3((b.low().x+b.high().x)/2, b.high().z + 20, (b.low().y+b.high().y)/2));
+          defaultController->lookAt(Vector3((b.low().x+b.high().x)/2, b.high().z, (b.low().y+b.high().y)/2));
+          consolePrintf("changed view to zone id %u",iMoveZone->getIndex());
+          consolePrintf("box: low %f,%f high %f,%f",b.low().x,b.low().y,b.high().x,b.high().y);
+          }
+        else
+          {
+          consolePrintf("zone %u does not exist",zoneid);
+          return;
+          }        
+        }
+      else if (command[1] == "xyz")
+        {
+        if (command.size()<5)
+          {
+          consolePrintf("syntax error");
+          return;
+          }
+        float x=atoi(command[2].c_str());
+        float y=atoi(command[3].c_str());
+        float z=atoi(command[4].c_str());
+        defaultController->setPosition(Vector3(x,z+5,y));
+        defaultController->lookAt(Vector3(x,z,y));
+        consolePrintf("changed view to coords [%f,%f,%f]",x,y,z);
+        return;
+        }
+      else
+        consolePrintf("syntax error");
+      return;
+      }
+    
+    consolePrintf("unknown command");
+  }
+
   //==========================================
 
   void

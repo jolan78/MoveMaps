@@ -7,6 +7,7 @@
 #include "TreeNode.h"
 #include "VMapTools.h"
 #include "MoveMapBox.h"
+#include "MoveZone.h"
 
 #include <G3D/AABox.h>
 #include <G3D/Vector3.h>
@@ -15,6 +16,7 @@
 
 namespace VMAP
 {
+  class MoveZoneContainer;
 
   //========================================================
 
@@ -200,6 +202,8 @@ namespace VMAP
     TreeNode *iTreeNodes;
     unsigned int iNTreeNodes;
     MoveMapConnectionManager* iMoveMapConnectionManager;
+    MoveZoneContainer* iMoveZoneContainer;
+    //unsigned int iNMoveZoneContainer; == iNMoveMapBoxes
     float iGranularity;
     AABox iBounds;
     Vector3 iPosition;
@@ -248,7 +252,22 @@ namespace VMAP
     MoveMapContainer (AABSPTree<MoveMapBox*>* pBoxTree, Table<MoveMapBox*, unsigned short>& pBoxPositionsTable);
     ~MoveMapContainer ();
 
+    // needed by MoveZones
+    MoveMapConnectionManager*
+    getMoveMapConnectionManager()
+    {
+      return iMoveMapConnectionManager;
+    }
+
     void fillMoveMapConnectionManagerArray (const MoveLayerConnectionPointsContainer& pMoveLayerConnectionPointsContainer, const Table<MoveLayer*, MoveMapBox*>& pLayerMapBoxTable, const Table<MoveMapBox*, unsigned short>& pBoxPositionsTable);
+
+    void setMoveZonesContainer (AABox gridBounds);
+
+    MoveZoneContainer*
+    getMoveZoneContainer()
+    {
+      return iMoveZoneContainer;
+    }
 
     const AABox&
     getBounds () const

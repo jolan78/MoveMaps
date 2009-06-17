@@ -5,6 +5,9 @@
 #include <G3D/G3DAll.h>
 #include "ModelContainer.h"
 #include "MoveMapBoxContainer.h"
+#include "MoveZone.h"
+// for "load *" console command
+#include <dirent.h>
 
 namespace VMAP
 {
@@ -21,6 +24,8 @@ namespace VMAP
     bool iShowMMaps;
     bool iShowVMaps;
     bool iShowBoxes;
+    bool iShowZones;
+    bool iShowPortals;
     
     VARAreaRef iVARAreaRef;
     
@@ -31,11 +36,13 @@ namespace VMAP
 
     VMapManager iVMapManager;
     
+    const MoveZoneContainer* iMoveZoneContainer;
+    
     int iMap;
     int ix;
     int iy;
   private:
-    
+    void ModelContainerView::addGrid ( int iMap, int x, int y );
     void addMoveMapToDisplay ( int mapId, int x, int y );
     
     void fillVertexAndIndexArraysWithMoveMapBoxContainer (Array<Vector3>& vArray, Array<int>& iArray, MoveMapContainer* iMoveMapBoxContainer);
@@ -55,6 +62,7 @@ namespace VMAP
     void init ();
     void cleanup ();
     void onUserInput (UserInput* ui);
+    void onConsoleCommand(const std::string& cmd);
 
     void fillRenderArray (const SubModel& pSm, Array<TriangleBox> &pArray, const TreeNode* pTreeNode);
     void fillVertexAndIndexArrays (const SubModel& pSm, Array<Vector3>& vArray, Array<int>& iArray );

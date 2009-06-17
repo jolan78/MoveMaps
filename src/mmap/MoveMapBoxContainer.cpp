@@ -38,6 +38,8 @@ namespace VMAP
     iMoveMapConnctionHandle = pMoveMapConnctionHandle;
     iMoveMapConnctionAxisArray = pMoveMapConnctionAxisArray;
     iMoveMapDestHandle = pMoveMapDestHandle;
+    //DEBUG
+    printf("#### graaa ####\n");
     iGranularity = pGranularity;
   }
 
@@ -153,11 +155,21 @@ namespace VMAP
   MoveMapConnectionManager::_findValueInArray (int pIndex, int pSize, unsigned int pSearchVaue) const
   {
     int result = -1;
+    
+    // DEBUG : is this sorted ???
+    printf ("looking for value %u at %d out of %d\n",pSearchVaue,pIndex,pSize);
+    for (int i = pIndex;i<pSize-pIndex;++i)
+      printf("%d\n",iMoveMapConnctionHandle[pIndex+i].getPosition ());
+    
+    // GUBED
     MoveMapConnctionHandle* foundElem = (MoveMapConnctionHandle*) bsearch (&pSearchVaue, &iMoveMapConnctionHandle[pIndex], pSize, sizeof (MoveMapConnctionHandle), &connectionHandleCompare);
+    
     if (foundElem != 0)
       {
+        printf("found\n");
         result = foundElem->getIndex ();
       }
+    assert (false);
     return (result);
   }
 
@@ -170,10 +182,12 @@ namespace VMAP
   MoveMapConnectionManager::findMapIndex (const Vector3& pPos) const
   {
     int result = -1;
-
-    int x = (int) (pPos.x * iGranularity + 0.5);
-    int y = (int) (pPos.y * iGranularity + 0.5);
-    int z = (int) (pPos.z * iGranularity + 0.5);
+//DEBUG
+printf ("looking for %f,%f,%f\ngranularity %f\n",pPos.x,pPos.y,pPos.z,iGranularity);
+    // FIXME : iGranularity is never set ?
+    int x = (int) (pPos.x /* * iGranularity*/ + 0.5);
+    int y = (int) (pPos.y /* * iGranularity*/ + 0.5);
+    int z = (int) (pPos.z /* * iGranularity*/ + 0.5);
 
     int yindex = _findValueInArray (iMoveMapConnctionAxisArray[0].iIndex, iMoveMapConnctionAxisArray[0].iNElements, x);
     if (yindex != -1)
@@ -249,7 +263,7 @@ namespace VMAP
     iNTreeNodes = nNodes;
     iMoveMapBoxArray = new MoveMapBox[iNMoveMapBoxes];
     iTreeNodes = new TreeNode[iNTreeNodes];
-
+    
     int moveMapBoxPos, treeNodePos;
     moveMapBoxPos = treeNodePos = 0;
 
@@ -348,6 +362,13 @@ namespace VMAP
       }
   }
 
+  void
+  MoveMapContainer::setMoveZonesContainer (AABox gridBounds)
+  {
+    iMoveZoneContainer = new MoveZoneContainer(iMoveMapBoxArray,iNMoveMapBoxes,gridBounds); 
+  }
+
+
   const char MMAP_VERSION[] = "MMAP_1.00";
   extern std::string startCoordsPath;
   
@@ -384,6 +405,75 @@ namespace VMAP
         maxY = iTmp->getSizeY ();
         fwrite (&maxY, 4, 1, output);
         const Vector3 basePos = iTmp->getBasePosition ();
+        
+        
+        Table<Vector2,Array<Vector3> > pPosTable;
+        if (GenCoords)
+          {
+          
+          // read already known starting points
+          // record rounded to avoid float comparison error
+          for(unsigned int i=0;i<4;++i)
+            {
+            int x_val = mapx;
+            int y_val = mapy;
+            Array<Vector3> pPosArray;
+            switch(i)
+              {
+              case 0:
+                x_val++;
+                break;
+              case 1:
+                x_val--;
+                break;
+              case 2:
+                y_val++;
+                break;
+              case 3:
+                y_val--;
+                break;
+              }
+            char coordname[255];
+            sprintf (coordname, "%s/%03u_%02u_%02u.txt",startCoordsPath.c_str(), MapId, x_val, y_val);
+            FILE* f = fopen (coordname, "rb");
+            if (f)
+              {
+              
+              int bufferSize = 500;
+              char buffer[500];
+              while (fgets (buffer, bufferSize - 1, f))
+                {
+                float y, x, z;
+                sscanf (buffer, "%f,%f,%f", &x, &y, &z); //"%d, %d, %d, %f, %f, %f", &map, &tilex, &tiley, &x, &y, &z);
+                pPosArray.push_back (Vector3 ((int)(1000*x), (int)(1000*y), (int)z));
+                }
+              fclose (f);
+              }
+              
+            sprintf (coordname, "%s/%03u_%02u_%02u_run.txt",startCoordsPath.c_str(), MapId, x_val, y_val);
+            f = fopen (coordname, "rb");
+            if (f)
+              {
+              
+              int bufferSize = 500;
+              char buffer[500];
+              while (fgets (buffer, bufferSize - 1, f))
+                {
+                float y, x, z;
+                sscanf (buffer, "%f,%f,%f", &x, &y, &z); //"%d, %d, %d, %f, %f, %f", &map, &tilex, &tiley, &x, &y, &z);
+                pPosArray.push_back (Vector3 ((int)(1000*x), (int)(1000*y), (int)z));
+                }
+              fclose (f);
+              }
+              
+            pPosTable.set(Vector2(x_val,y_val),pPosArray);
+            }
+          }
+
+/* DEBUG :        
+        printf("B low %f,%f high %f,%f\n",-((mid + oriLow.x) - full),-((mid + oriLow.z) - full),-((mid + oriHigh.x) - full),-((mid + oriHigh.z) - full));
+        printf("S low %f,%f high %f,%f\n",-((mid + basePos.x) - full),-((mid + basePos.z) - full),-((mid + basePos.x+maxX) - full),-((mid + basePos.z+maxY) - full));
+*/
         for (unsigned int x = 0; x < maxX; ++x)
           {
             for (unsigned int y = 0; y < maxY; ++y)
@@ -407,6 +497,22 @@ namespace VMAP
                       x_val = mapx + 1;
 
                     //if (cx < oriLow.x-1 || cx > oriHigh.x+1 || cy < oriLow.z-1 || cy > oriHigh.z+1)
+                    if (x_val == mapx && y_val == mapy && (abs(cx - oriLow.x) < 0.01f || abs(cy - oriLow.z) < 0.01f || abs( cx - oriHigh.x) < 0.01f || abs(cy - oriHigh.z) < 0.01f) )
+                      {
+                        char coordname[15];
+
+                        float mangosx, mangosy;
+                        mangosx = -((mid + cy) - full);
+                        mangosy = -((mid + cx) - full);
+                        
+                        sprintf (coordname, "%03u_%02u_%02u_run.txt", MapId, x_val, y_val);
+                        nName = startCoordsPath + "/" + (std::string)coordname;
+                        FILE *Coord = fopen (nName.c_str (), "ab");
+
+                        fprintf (Coord, "%f,%f,%f\n", mangosx, mangosy, iTmp->getFloatHeight (val));
+                        fclose (Coord);
+                        }
+
                     if (x_val != mapx || y_val != mapy)
                       {
                         char coordname[15];
@@ -414,17 +520,24 @@ namespace VMAP
                         float mangosx, mangosy;
                         mangosx = -((mid + cy) - full);
                         mangosy = -((mid + cx) - full);
-                        double x_offset = (double(mangosx) - (533.33333f / 2)) / 533.33333f;
-                        double y_offset = (double(mangosy) - (533.33333f / 2)) / 533.33333f;
-                        //int x_val = 63 - int(x_offset + 32 + 0.5);
-                        //int y_val = 63 - int(y_offset + 32 + 0.5);
+                        
+                        if (pPosTable.containsKey(Vector2(x_val,y_val))) // corner grids are not handeld for now
+                          {
+                          Array<Vector3> pPosArray = pPosTable.get(Vector2(x_val,y_val));
+                          if (!pPosArray.contains(Vector3((int)(1000*mangosx), (int)(1000*mangosy), (int)(iTmp->getFloatHeight (val)))))
+                            {
+                            //double x_offset = (double(mangosx) - (533.33333f / 2)) / 533.33333f;
+                            //double y_offset = (double(mangosy) - (533.33333f / 2)) / 533.33333f;
+                            //int x_val = 63 - int(x_offset + 32 + 0.5);
+                            //int y_val = 63 - int(y_offset + 32 + 0.5);
+                            sprintf (coordname, "%03u_%02u_%02u.txt", MapId, x_val, y_val);
+                            nName = startCoordsPath + "/" + (std::string)coordname;
+                            FILE *Coord = fopen (nName.c_str (), "ab");
 
-                        sprintf (coordname, "%03u_%02u_%02u.txt", MapId, x_val, y_val);
-                        nName = startCoordsPath + "/" + (std::string)coordname;
-                        FILE *Coord = fopen (nName.c_str (), "ab");
-
-                        fprintf (Coord, "%f,%f,%f\n", mangosx, mangosy, iTmp->getFloatHeight (val));
-                        fclose (Coord);
+                            fprintf (Coord, "%f,%f,%f\n", mangosx, mangosy, iTmp->getFloatHeight (val));
+                            fclose (Coord);
+                          }
+                        }
                       }
                   }
                 fwrite (&val, 1, 1, output);
@@ -462,7 +575,78 @@ namespace VMAP
         us = iTmp->getNValues ();
         fwrite (&us, 2, 1, output);
       }
+
+      iMoveZoneContainer->save(output);
+      /*
+      int NZones = iMoveZoneContainer->getNZones();
+      fwrite (&NZones, 4, 1, output);
+       
+      for (unsigned int j=0; j < NZones; j++)
+      {
+        const MoveZone* iZone = iMoveZoneContainer->getZone(j);
+        fwrite (&iZone->getBounds ().low ().x, 4, 1, output);
+        fwrite (&iZone->getBounds ().low ().y, 4, 1, output);
+        fwrite (&iZone->getBounds ().low ().z, 4, 1, output);
+        fwrite (&iZone->getBounds ().high ().x, 4, 1, output);
+        fwrite (&iZone->getBounds ().high ().y, 4, 1, output);
+        fwrite (&iZone->getBounds ().high ().z, 4, 1, output);
+        
+        Array<MovePortal*> Portals;
+        Portals = iZone->getPortalArray();
+        unsigned int pArraySize = Portals.size();
+        fwrite (&pArraySize, 4, 1, output);
+        for (unsigned int p=0; p<pArraySize; ++p)
+          {
+          unsigned int pdest = Portals[p]->getDestination();
+          fwrite (&pdest, 4, 1, output);
+          unsigned int pdir = Portals[p]->getDirection();
+          fwrite (&pdir, 4, 1, output);
+          fwrite (&Portals[p]->getLow().x, 4, 1, output);
+          fwrite (&Portals[p]->getLow().y, 4, 1, output);
+          fwrite (&Portals[p]->getLow().z, 4, 1, output);
+          fwrite (&Portals[p]->getHigh().x, 4, 1, output);
+          fwrite (&Portals[p]->getHigh().y, 4, 1, output);
+          fwrite (&Portals[p]->getHigh().z, 4, 1, output);
+          }
+      }
+    printf ("Saved MoveZones : %d\n", NZones);*/
+
     fclose (output);
+
+    for (unsigned int direction = 0; direction<4; ++direction)
+      {
+      const Table<unsigned int*, float>* iGridPortals=iMoveZoneContainer->getGridPortals(direction);
+      if (iGridPortals->size() > 0)
+        {
+        int x_val = mapx;
+        int y_val = mapy;
+
+        switch (direction)
+          {
+          case EXTEND_N :
+            y_val+=1;
+          break;
+          case EXTEND_S :
+            y_val-=1;
+          break;
+          case EXTEND_E :
+            x_val+=1;
+          break;
+          case EXTEND_W :
+            x_val-=1;
+          break;
+          }
+        char filename[15];
+        sprintf (filename, "grid_cnx_%03u_%02u_%02u_%02u_%02u.tmp", MapId, mapx, mapy, x_val, y_val);
+        nName = startCoordsPath + "/" + (std::string)filename;
+        FILE *GridCnx = fopen (nName.c_str (), "wb");
+        for(Table<unsigned int*, float>::Iterator itr= iGridPortals->begin(); itr != iGridPortals->end(); ++itr)
+          fprintf (GridCnx, "%u,%u,%f\n", itr->key[0], itr->key[1], itr->value);
+        fclose (GridCnx);
+        }
+      }
+
+
     printf ("Mmap saved (%u iNMoveMapBoxes and %u iNTreeNodes)\n", iNMoveMapBoxes, iNTreeNodes);
   }
 
@@ -557,6 +741,56 @@ namespace VMAP
         iTreeNodes[i] = *CurrentNode;
 
       }
+
+      iMoveZoneContainer = new MoveZoneContainer();
+      printf("Loading MoveZoneContainer:\n");
+      iMoveZoneContainer->load(input);
+      /*
+      fread (&nb, 4, 1, input);
+      //iTmp.setNZones(nb);
+      for (unsigned int j=0; j < nb; j++)
+        {
+        Vector3 v1;
+        Vector3 v2;
+        fread (&v1.x, 4, 1, input);
+        fread (&v1.y, 4, 1, input);
+        fread (&v1.z, 4, 1, input);
+        fread (&v2.x, 4, 1, input);
+        fread (&v2.y, 4, 1, input);
+        fread (&v2.z, 4, 1, input);
+        
+        int nPortals;
+        fread (&nPortals, 4, 1, input);
+        Array<MovePortal*> * PArray = new Array<MovePortal*>();
+        for (unsigned int p=0; p<nPortals; ++p)
+            {
+            unsigned int destID;
+            fread (&destID, 4, 1, input);
+            unsigned int direction;
+            fread (&direction, 4, 1, input);
+            Vector3 low;
+            fread (&low.x, 4, 1, input);
+            fread (&low.y, 4, 1, input);
+            fread (&low.z, 4, 1, input);
+            Vector3 high;
+            fread (&high.x, 4, 1, input);
+            fread (&high.y, 4, 1, input);
+            fread (&high.z, 4, 1, input);
+            
+            MovePortal * portal = new MovePortal(low,high,destID,direction);
+            //DEBUG: printf("portal at %f,%f %f\n",portal->getLow().x,portal->getLow().y,portal->getLow().z);
+            PArray->append(portal);
+            }
+        
+        //DEBUG: printf("zone load at %f,%f \n",v1.x,v1.y);
+        AABox pBox (v1, v2);
+        iMoveZoneContainer->setZone(&pBox,j,PArray);
+        }
+      printf ("Red MoveZones : %u\n", nb);*/
+
+      //iMoveZoneContainer = iTmp; // FIXME : should be a AABSPTree like iTreeNodes
+      printf ("zoneContainer loaded : %i zones\n",iMoveZoneContainer->getNZones());
+    
     fclose (input);
     printf ("load done.\n");
   }

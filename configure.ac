@@ -44,6 +44,7 @@ AC_CONFIG_FILES([
     src/vmap/Makefile
     src/mmap/Makefile
     src/generator/Makefile
+    src/connector/Makefile
     src/viewer/Makefile
     src/vmap2/Makefile
     src/vmap_assembler/Makefile
