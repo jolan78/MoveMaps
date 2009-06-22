@@ -36,7 +36,7 @@ namespace VMAP
 
     VMapManager iVMapManager;
     
-    const MoveZoneContainer* iMoveZoneContainer;
+    Table<std::string, const MoveZoneContainer*> iMoveZoneContainers;
     
     int iMap;
     int ix;

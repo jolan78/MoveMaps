@@ -201,6 +201,7 @@ namespace VMAP
     return elem1->getIndex() < elem2->getIndex();
     }
 
+
 }
 
 // for rstartree

@@ -1,4 +1,5 @@
 #include "MoveZone.h"
+#include <time.h>
 //#define DEBUG_COORDS
 //#define DEBUG_PORTALS
 //#define LAYER_CONNEXION
@@ -515,7 +516,7 @@ namespace VMAP
       
       }
     
-    unsigned int portalID=0; // ID of portalcell = id of portal if at grid edge 
+    unsigned int portalID=iPortals.size(); // ID of portalcell = id of portal if at grid edge 
     for (float x=x1 ; x<=x2 ;++x) 
       {
       for (float y=y1 ; y<=y2 ;++y)
@@ -536,6 +537,9 @@ namespace VMAP
               unsigned int* tmp=(unsigned int*)malloc(2*sizeof(unsigned int));
               tmp[0]=iMoveZone->getIndex();
               tmp[1]=portalID;
+              
+              
+printf("gridportal : %u,%u %f,%f,%f\n",tmp[0],tmp[1],curpos.x,curpos.y,curpos.z);
               gridPortals[direction].set(tmp,curpos.z);
               }
             else
@@ -1150,6 +1154,12 @@ printf("removing myOutOfZonePoints %f,%f : reached\n",x,y);
     for ( unsigned short i=0; i<3; i++)
       tempLayerConnexions.clear();
     return !broken;
+    }
+  
+  // to sort Array<MovePortal*>
+  static bool MovePortalLT(MovePortal*const& elem1, MovePortal*const& elem2)
+    {
+    return elem1->getLow2().x < elem2->getLow2().x || elem1->getLow2().y < elem2->getLow2().y;
     }
 
   void

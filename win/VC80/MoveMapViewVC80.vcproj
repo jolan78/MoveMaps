@@ -371,7 +371,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\mmap\MoveZone.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\mmap\MoveZone.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\mmap\PositionControlArray.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\mmap\RStarTree.h"
 				>
 			</File>
 			<File

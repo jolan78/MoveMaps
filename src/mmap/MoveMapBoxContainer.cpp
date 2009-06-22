@@ -623,17 +623,18 @@ printf ("looking for %f,%f,%f\ngranularity %f\n",pPos.x,pPos.y,pPos.z,iGranulari
 
         switch (direction)
           {
+          // grid coords are YX
           case EXTEND_N :
-            y_val+=1;
-          break;
-          case EXTEND_S :
-            y_val-=1;
-          break;
-          case EXTEND_E :
             x_val+=1;
           break;
-          case EXTEND_W :
+          case EXTEND_S :
             x_val-=1;
+          break;
+          case EXTEND_E :
+            y_val+=1;
+          break;
+          case EXTEND_W :
+            y_val-=1;
           break;
           }
         char filename[15];
@@ -641,7 +642,10 @@ printf ("looking for %f,%f,%f\ngranularity %f\n",pPos.x,pPos.y,pPos.z,iGranulari
         nName = startCoordsPath + "/" + (std::string)filename;
         FILE *GridCnx = fopen (nName.c_str (), "wb");
         for(Table<unsigned int*, float>::Iterator itr= iGridPortals->begin(); itr != iGridPortals->end(); ++itr)
+          {
           fprintf (GridCnx, "%u,%u,%f\n", itr->key[0], itr->key[1], itr->value);
+          printf("writing %u,%u,%f to %03u_%02u_%02u_%02u_%02u\n", itr->key[0], itr->key[1], itr->value, MapId, mapx, mapy, x_val, y_val);
+          }
         fclose (GridCnx);
         }
       }

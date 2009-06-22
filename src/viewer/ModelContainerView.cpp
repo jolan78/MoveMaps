@@ -10,6 +10,29 @@
 #include "ModelContainerView.h"
 #include "Config/Config.h"
 
+
+// only for "load *" console command :
+#ifdef WIN32
+  #include <strsafe.h>
+
+/* std::wstring to std::string function by Andrew Revvo
+   ref : http://social.msdn.microsoft.com/Forums/en-US/Vsexpressvc/thread/0f749fd8-8a43-4580-b54b-fbf964d68375/ */
+  std::string ws2s(const std::wstring& s)
+    {
+    int len;
+    int slength = (int)s.length() + 1;
+    len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0); 
+    char* buf = new char[len];
+    WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, buf, len, 0, 0); 
+    std::string r(buf);
+    delete[] buf;
+    return r;
+    }
+#else
+  #include <dirent.h>
+#endif
+
+
 using namespace G3D;
 
 namespace VMAP
@@ -537,11 +560,14 @@ namespace VMAP
     printf("Load %d MapBox vertices\n",vbArray.size());
     iTriVarTable.set (name, new VAR (vbArray, iVARAreaRef));
     iTriIndexTable.set (name, ibArray);
-    
-    iMoveZoneContainer = moveMapBoxContainer.getMoveZoneContainer();
+    char maprefbuffer[6];
+    sprintf (maprefbuffer, "%02u:%02u", x, y);
+    std::string mapref=maprefbuffer;
+    printf ("loading map %s\n",mapref.c_str());
+    iMoveZoneContainers.set(mapref,moveMapBoxContainer.getMoveZoneContainer());
     //const Vector3 basePos = iMoveZoneContainer->getBasePosition ();
     //printf("ZoneContainer at %f,%f,%f\n",basePos.x,basePos.z,basePos.y);
-    Array<MoveZone*> iMoveZoneArray=iMoveZoneContainer->getMoveZoneArray();
+    Array<MoveZone*> iMoveZoneArray=iMoveZoneContainers[mapref]->getMoveZoneArray();
     for (unsigned int j = 0; j< iMoveZoneArray.size(); j++)
       {
       const MoveZone* iMoveZone=iMoveZoneArray[j];
@@ -927,14 +953,32 @@ namespace VMAP
       {
       if (command.size()==2 && command[1]=="*")
         {
-        DIR* dirp=opendir(gMMapDataDir.c_str());
-        dirent* de;
         unsigned int n=0;
-        while ((de = readdir(dirp)) != NULL)
-          {
-          std::string fname = de->d_name;
-          if (fname.find(".mmap") != std::string::npos)
+        #ifdef WIN32
+          WIN32_FIND_DATA ffd;
+          TCHAR szDir[MAX_PATH];
+
+          size_t origsize = strlen(gMMapDataDir.c_str()) + 1;
+          size_t convertedChars = 0;
+          wchar_t wcstring[MAX_PATH];
+          mbstowcs_s(&convertedChars, wcstring, origsize, gMMapDataDir.c_str(), _TRUNCATE);
+          
+          StringCchCopy(szDir, MAX_PATH, wcstring);
+          StringCchCat(szDir, MAX_PATH, TEXT("\\*.mmap"));
+          HANDLE hFind = FindFirstFile(szDir, &ffd);
+          do
             {
+            std::string fname = ws2s(ffd.cFileName);
+        #else
+          DIR* dirp=opendir(gMMapDataDir.c_str());
+          dirent* de;
+          while ((de = readdir(dirp)) != NULL)
+            {
+            std::string fname = de->d_name;
+            if (fname.find(".mmap") != std::string::npos)
+              {
+        #endif
+          
             int x = atoi(fname.substr(4,2).c_str());
             int y = atoi(fname.substr(7,2).c_str());
             addGrid(iMap, x, y);
@@ -945,9 +989,15 @@ namespace VMAP
               consolePrintf("Had to stop loading due to memory after adding %u grids (defined in ModelContainerView::ModelContainerView)",n);
               return;
               }
+            
+        #ifdef WIN32
+          }while (FindNextFile(hFind, &ffd) != 0);
+          FindClose(hFind);
+        #else
             }
           }
-        closedir(dirp);
+          closedir(dirp);
+        #endif
         consolePrintf("loaded %u grids",n);
         return;
         }
@@ -982,14 +1032,22 @@ namespace VMAP
         }
       if (command[1] == "zone")
         {
-        if (command.size()<3)
+        if (command.size() != 4)
           {
           consolePrintf("syntax error");
           return;
           }
-        unsigned int zoneid=atoi(command[2].c_str());
+        std::string mapref=command[2];
+        unsigned int zoneid=atoi(command[3].c_str());
         //iMoveZoneContainer = moveMapBoxContainer.getMoveZoneContainer();
-        Array<MoveZone*> iMoveZoneArray=iMoveZoneContainer->getMoveZoneArray();
+        printf("go zone %s %u\n",mapref.c_str(),zoneid);
+        const MoveZoneContainer* iMZcontainer;
+        if (!iMoveZoneContainers.get(mapref,iMZcontainer))
+          {
+          consolePrintf("map %s is not loaded",mapref.c_str());
+          return;
+          }
+        Array<MoveZone*> iMoveZoneArray=iMZcontainer->getMoveZoneArray();
         
         if (zoneid>=0 && zoneid<iMoveZoneArray.size())
           {
@@ -1010,7 +1068,7 @@ namespace VMAP
         }
       else if (command[1] == "xyz")
         {
-        if (command.size()<5)
+        if (command.size() != 5)
           {
           consolePrintf("syntax error");
           return;

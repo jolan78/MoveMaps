@@ -7,6 +7,8 @@
 #include "MoveMapBoxContainer.h"
 #include "MoveMapBox.h"
 
+#include <time.h>
+
 namespace VMAP
 {
   //extern Array<AABox> gBoxArray; // +++ debug

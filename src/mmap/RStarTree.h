@@ -497,7 +497,7 @@ public:
 					{
 					
 					leaves->append(((Leaf*)(*it))->leaf);
-//					printf("FOUND MZ %d\n",(*leaf)->getIndex());
+//					printf("FOUND MZ %d\n",((Leaf*)(*it))->leaf->getIndex());
 					//return true;
 					}
 			}
@@ -513,9 +513,10 @@ public:
 				     lowZ < (*it)->high().z &&
 				     highZ > (*it)->low().z )
 				{
+//				    printf(">");
 				    _FindLeavesByZRange(x, y, lowZ, highZ ,(RSTarNode*)(*it),leaves);
+					
 				    /*
-//					printf(">");
 					if (_FindFindLeafsByZRange(x, y, lowZ, highZ ,(RSTarNode*)(*it),leaves))
 						{
 //						printf("returning MZ %d\n",(*leaf)->getIndex());
@@ -648,7 +649,7 @@ public:
 				float x1,y1,z1,x2,y2,z2;
 				fread (&x1,sizeof(float),1,fp);
 				fread (&y1,sizeof(float),1,fp);
-				fread (&y1,sizeof(float),1,fp);
+				fread (&z1,sizeof(float),1,fp);
 				fread (&x2,sizeof(float),1,fp);
 				fread (&y2,sizeof(float),1,fp);
 				fread (&z2,sizeof(float),1,fp);
@@ -678,7 +679,7 @@ public:
 				float x1,y1,z1,x2,y2,z2;
 				fread (&x1,sizeof(float),1,fp);
 				fread (&y1,sizeof(float),1,fp);
-				fread (&y1,sizeof(float),1,fp);
+				fread (&z1,sizeof(float),1,fp);
 				fread (&x2,sizeof(float),1,fp);
 				fread (&y2,sizeof(float),1,fp);
 				fread (&z2,sizeof(float),1,fp);
@@ -876,8 +877,8 @@ public:
 	struct SortNodesByFirstEdge : 
 		public std::binary_function< const AABox * const, const AABox * const, bool >
 	{
-		const std::size_t m_axis;
-		explicit SortNodesByFirstEdge (const std::size_t axis) : m_axis(axis) {}
+		const int m_axis;
+		explicit SortNodesByFirstEdge (int axis) : m_axis(axis) {}
 		
 		bool operator() (const AABox * const bi1, const AABox * const bi2) const 
 		{
@@ -889,8 +890,8 @@ public:
 	struct SortNodesBySecondEdge : 
 		public std::binary_function< const AABox * const, const AABox * const, bool >
 	{
-		const std::size_t m_axis;
-		explicit SortNodesBySecondEdge (const std::size_t axis) : m_axis(axis) {}
+		int m_axis;
+		explicit SortNodesBySecondEdge (int axis) : m_axis(axis) {}
 	
 		bool operator() (const AABox * const bi1, const AABox * const bi2) const 
 		{
