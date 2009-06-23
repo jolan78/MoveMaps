@@ -13,6 +13,7 @@
 #ifndef RSTARTREE_H
 #define RSTARTREE_H
 
+#include <functional>
 #include "G3D/Array.h"
 #include "G3D/AABox.h"
 //#include "G3D/Sphere.h"
