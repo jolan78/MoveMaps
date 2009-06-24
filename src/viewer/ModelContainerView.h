@@ -6,8 +6,6 @@
 #include "ModelContainer.h"
 #include "MoveMapBoxContainer.h"
 #include "MoveZone.h"
-// for "load *" console command
-#include <dirent.h>
 
 namespace VMAP
 {
