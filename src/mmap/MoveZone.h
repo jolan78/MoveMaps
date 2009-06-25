@@ -60,6 +60,7 @@ namespace VMAP
     void connect(MoveZoneContainer* MZContainer);
     void save(FILE* fp);
     void load(FILE* fp);
+    void reconnect(Array<MoveZone*>& moveZoneArray);
 
     Vector3 getLow() {return Vector3(X1,Y1,Z1); }
     Vector3 getHigh() {return Vector3(X2,Y2,Z2); }
@@ -67,7 +68,7 @@ namespace VMAP
     Vector2 getHigh2() {return Vector2(X2,Y2); }
     unsigned int getDestination() { return DestZoneID; }
     unsigned int getDirection() { return direction; }
-    void setDestGrid(unsigned int x,unsigned int y,unsigned int zoneID) {destGridX=x,destGridY=y,DestZoneID=zoneID; }
+    void setDestGridAndZone(unsigned int x,unsigned int y,unsigned int zoneID) {destGridX=x,destGridY=y,DestZoneID=zoneID; }
   };
 
   class MoveZone
@@ -95,7 +96,8 @@ namespace VMAP
     ~MoveZone () {};
     void save(FILE* fp);
     void load(FILE* fp);
-
+    void reconnectPortals(Array<MoveZone*>& moveZoneArray);
+    
     const AABox&
     getBounds () const
     {
@@ -249,14 +251,13 @@ namespace VMAP
     void connectPortals(MoveZone* iMoveZone,unsigned int direction);
     void connectLayerPortals(MoveZone* iMoveZone,unsigned int direction);
     
+    void reconnectPortals();
+    
     void
     save(FILE* fp)
     {
       MZ_Tree->save(fp);
     }
-    
-
-    
 
     void
     load(FILE* fp)
@@ -264,6 +265,7 @@ namespace VMAP
       MZ_Tree = new RStarTree<MoveZone*>(2, 4);
       pMoveZonesArray=MZ_Tree->load(fp);
       pMoveZonesArray.sort(MoveZoneLT);
+      reconnectPortals();
     }
 
     /* for debug only */
@@ -280,7 +282,7 @@ namespace VMAP
       return pMoveZonesArray.size();
     }
     
-    const MoveZone*
+    MoveZone*
     getZone(unsigned int i) const
     {
       return pMoveZonesArray[i];

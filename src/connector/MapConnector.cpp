@@ -163,7 +163,7 @@ namespace VMAP
     Vector2 prevTestVector2;
     for (unsigned int i=0; i<MZArray.size(); ++i)
       {
-      const MoveZone* fromMZ=fromMoveZoneContainer->getZone(MZArray[i]);
+      MoveZone* fromMZ=fromMoveZoneContainer->getZone(MZArray[i]);
       Array<MovePortal*> fromPortalArray=fromMZ->getPortalArray();
       Table<Vector2,MovePortal*> fromPortalTable;
       for (unsigned int j=0;j<fromPortalArray.size();++j)
@@ -262,7 +262,7 @@ namespace VMAP
         prevdestMZ=destMZ;
 
         }
-        
+      fromMZ->setPortalArray(&fromPortalArray);
       }
   }
 

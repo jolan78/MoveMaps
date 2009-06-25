@@ -148,6 +148,12 @@ namespace VMAP
     fread (&destGridY,sizeof(unsigned int),1,fp);
   }
 
+  void
+  MovePortal::reconnect(Array<MoveZone*>& moveZoneArray)
+    {
+    if (destGridX && destGridY) // dest inside grid
+      DestZone=moveZoneArray[DestZoneID];
+    }
   
   size_t hashCode (const MoveZone* pMZ)
     {
@@ -612,6 +618,12 @@ printf("gridportal : %u,%u %f,%f,%f\n",tmp[0],tmp[1],curpos.x,curpos.y,curpos.z)
     
     }
   
+  void
+  MoveZoneContainer::reconnectPortals()
+    {
+    for (unsigned int zoneID=0;zoneID<pMoveZonesArray.size();++zoneID)
+      pMoveZonesArray[zoneID]->reconnectPortals(pMoveZonesArray);
+    }
   
   MoveZone*
   MoveZoneContainer::getMoveZoneByCoords (const Vector3& pPos) const
@@ -1212,6 +1224,13 @@ printf("removing myOutOfZonePoints %f,%f : reached\n",x,y);
       }
   }
 
+  void
+  MoveZone::reconnectPortals(Array<MoveZone*>& moveZoneArray)
+    {
+    for (unsigned int i=0;i<iPortals.size();++i)
+      iPortals[i]->reconnect(moveZoneArray);
+    }
+  
   void
   MoveZoneContainer::setZone(AABox* pBox,unsigned int i, Array<MovePortal*> * PArray)
   {
