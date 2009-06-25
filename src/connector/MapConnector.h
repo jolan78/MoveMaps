@@ -27,7 +27,7 @@ namespace VMAP
     int iby;
     bool vertical;
   private:
-    void connect (Table<unsigned int, Table<unsigned int,float> > connexionPts,MoveZoneContainer* fromMoveZoneContainer,MoveZoneContainer* destMoveZoneContainer, unsigned short direction, int dx, int dy);
+    void connect (Table<unsigned int, Table<Vector2,float> > connexionPts,MoveZoneContainer* fromMoveZoneContainer,MoveZoneContainer* destMoveZoneContainer, unsigned short direction, int dx, int dy);
 
   public:
     MapConnector (int mapId, int ax, int ay, int bx, int by);

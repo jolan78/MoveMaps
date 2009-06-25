@@ -615,7 +615,8 @@ printf ("looking for %f,%f,%f\ngranularity %f\n",pPos.x,pPos.y,pPos.z,iGranulari
 
     for (unsigned int direction = 0; direction<4; ++direction)
       {
-      const Table<unsigned int*, float>* iGridPortals=iMoveZoneContainer->getGridPortals(direction);
+      //const Table<unsigned int*, float>* iGridPortals=iMoveZoneContainer->getGridPortals(direction);
+      const Array<gridPortal>* iGridPortals=iMoveZoneContainer->getGridPortals(direction);
       if (iGridPortals->size() > 0)
         {
         int x_val = mapx;
@@ -641,10 +642,11 @@ printf ("looking for %f,%f,%f\ngranularity %f\n",pPos.x,pPos.y,pPos.z,iGranulari
         sprintf (filename, "grid_cnx_%03u_%02u_%02u_%02u_%02u.tmp", MapId, mapx, mapy, x_val, y_val);
         nName = startCoordsPath + "/" + (std::string)filename;
         FILE *GridCnx = fopen (nName.c_str (), "wb");
-        for(Table<unsigned int*, float>::Iterator itr= iGridPortals->begin(); itr != iGridPortals->end(); ++itr)
+        for(Array<gridPortal>::ConstIterator itr= iGridPortals->begin();itr != iGridPortals->end();++itr)
           {
-          fprintf (GridCnx, "%u,%u,%f\n", itr->key[0], itr->key[1], itr->value);
-          printf("writing %u,%u,%f to %03u_%02u_%02u_%02u_%02u\n", itr->key[0], itr->key[1], itr->value, MapId, mapx, mapy, x_val, y_val);
+          //fprintf (GridCnx, "%u,%u,%f\n", itr->key[0], itr->key[1], itr->value);
+          fprintf (GridCnx, "%u,%f,%f,%f\n", itr->MoveZoneId, itr->fromx, itr->fromy, itr->destz);
+          printf("writing %u,%f,%f,%f to %03u_%02u_%02u_%02u_%02u\n", itr->MoveZoneId, itr->fromx, itr->fromy, itr->destz, MapId, mapx, mapy, x_val, y_val);
           }
         fclose (GridCnx);
         }

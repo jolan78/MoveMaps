@@ -31,6 +31,14 @@ namespace VMAP
   class MoveZone;
   class MoveZoneContainer;
   
+  struct gridPortal
+  {
+    unsigned int MoveZoneId;
+    float fromx;
+    float fromy;
+    float destz;
+  };
+  
   class MovePortal
   {
   private:
@@ -59,7 +67,7 @@ namespace VMAP
     Vector2 getHigh2() {return Vector2(X2,Y2); }
     unsigned int getDestination() { return DestZoneID; }
     unsigned int getDirection() { return direction; }
-    void setDestGrid(unsigned int x,unsigned int y) {destGridX=x,destGridY=y; }
+    void setDestGrid(unsigned int x,unsigned int y,unsigned int zoneID) {destGridX=x,destGridY=y,DestZoneID=zoneID; }
   };
 
   class MoveZone
@@ -222,7 +230,8 @@ namespace VMAP
     Array<MoveZone*> pMoveZonesArray;
     unsigned int moveZoneIndex;
     Vector3 basePos;
-    Table<unsigned int*, float> gridPortals[4];
+    //Table<unsigned int*, float> gridPortals[4];
+    Array<gridPortal> gridPortals[4];
     Set<Vector2> outOfZonePoints;
 
     void generate(const MoveMapBox* iMoveMapBoxArray,int iNMoveMapBoxes,AABox gridBounds);
@@ -276,7 +285,8 @@ namespace VMAP
     {
       return pMoveZonesArray[i];
     }
-    const Table<unsigned int*, float>*
+    //const Table<unsigned int*, float>*
+    const Array<gridPortal>*
     getGridPortals(unsigned int direction)
       {
       return &gridPortals[direction];

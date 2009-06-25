@@ -77,8 +77,8 @@ namespace VMAP
   {
     MoveMapContainer moveMapBoxContainerA;
     MoveMapContainer moveMapBoxContainerB;
-    Table<unsigned int, Table<unsigned int,float> > connexionPtsAtoB;
-    Table<unsigned int, Table<unsigned int,float> > connexionPtsBtoA;
+    Table<unsigned int, Table<Vector2,float> > connexionPtsAtoB;
+    Table<unsigned int, Table<Vector2,float> > connexionPtsBtoA;
     /*Table<Vector2, unsigned int> landingPointsMZA;
     Table<Vector2,float> landingPointsDHeightA;
     Table<Vector2, unsigned int> landingPointsMZB;
@@ -98,16 +98,22 @@ namespace VMAP
     char readBuffer[500];
 
     unsigned int mzID, portalID;
-    float z;
+    float x,y,z;
  printf ("load grid_cnx_%03u_%02u_%02u_%02u_%02u\n",iMap, iax, iay, ibx, iby);
     sprintf (buffer, "%s/grid_cnx_%03u_%02u_%02u_%02u_%02u.tmp", startCoordsPath.c_str(),iMap, iax, iay, ibx, iby);
     CnxPts = fopen (buffer, "rb");
+    if (!CnxPts)
+      {
+      printf("ERROR : Failed to open %s\n",buffer);
+      exit(1);
+      }
     while (fgets (readBuffer, bufferSize - 1, CnxPts))
       {
-      sscanf (readBuffer, "%u,%u,%f", &mzID, &portalID, &z);
-      Table<unsigned int,float> vals;
+      sscanf (readBuffer, "%u,%f,%f,%f", &mzID, &x, &y, &z);
+      Vector2 fromPt=Vector2(x,y);
+      Table<Vector2,float> vals;
       connexionPtsAtoB.get(mzID,vals);
-      vals.set(portalID,z);
+      vals.set(fromPt,z);
       connexionPtsAtoB.set(mzID,vals);
       }
     fclose (CnxPts);
@@ -115,12 +121,18 @@ namespace VMAP
  printf ("load grid_cnx_%03u_%02u_%02u_%02u_%02u\n",iMap, ibx, iby, iax, iay);
     sprintf (buffer, "%s/grid_cnx_%03u_%02u_%02u_%02u_%02u.tmp", startCoordsPath.c_str(),iMap, ibx, iby, iax, iay);
     CnxPts = fopen (buffer, "rb");
+    if (!CnxPts)
+      {
+      printf("ERROR : Failed to open %s\n",buffer);
+      exit(1);
+      }
     while (fgets (readBuffer, bufferSize - 1, CnxPts))
       {
-      sscanf (readBuffer, "%u,%u,%f", &mzID, &portalID, &z);
-      Table<unsigned int,float> vals;
+      sscanf (readBuffer, "%u,%f,%f,%f", &mzID, &x, &y, &z);
+      Vector2 fromPt=Vector2(x,y);
+      Table<Vector2,float> vals;
       connexionPtsBtoA.get(mzID,vals);
-      vals.set(portalID,z);
+      vals.set(fromPt,z);
       connexionPtsBtoA.set(mzID,vals);
       }
     fclose (CnxPts);
@@ -134,9 +146,14 @@ namespace VMAP
     connect(connexionPtsBtoA,iMoveZoneContainerB,iMoveZoneContainerA, direction,iax, iay);
     moveMapBoxContainerB.save (gMMapDataDir.c_str (), dummy, dummy, dummy, dummy, iMap, ibx, iby, false);
   }
+  // to sort Array<Vector2>
+  static bool Vector2LT(const Vector2& elem1, const Vector2& elem2)
+    {
+    return elem1.x < elem2.x || elem1.y < elem2.y;
+    }
 
   void
-  MapConnector::connect (Table<unsigned int, Table<unsigned int,float> > connexionPts,MoveZoneContainer* fromMoveZoneContainer,MoveZoneContainer* destMoveZoneContainer, unsigned short direction, int dx, int dy)
+  MapConnector::connect (Table<unsigned int, Table<Vector2,float> > connexionPts,MoveZoneContainer* fromMoveZoneContainer,MoveZoneContainer* destMoveZoneContainer, unsigned short direction, int dx, int dy)
   {
     Array<unsigned int> MZArray = connexionPts.getKeys();
     MZArray.sort();
@@ -148,99 +165,34 @@ namespace VMAP
       {
       const MoveZone* fromMZ=fromMoveZoneContainer->getZone(MZArray[i]);
       Array<MovePortal*> fromPortalArray=fromMZ->getPortalArray();
-      Array<unsigned int> fromPortalidArray = connexionPts[MZArray[i]].getKeys();
-      fromPortalidArray.sort();
-      printf("in movezone %d : %u portals\n",fromMZ->getIndex(),fromPortalArray.size());
-      
-      
-      /*fromPortalArray.sort(MovePortalLT);
-      for(unsigned int j=0;j < fromPortalArray.size(); ++j)
+      Table<Vector2,MovePortal*> fromPortalTable;
+      for (unsigned int j=0;j<fromPortalArray.size();++j)
         {
-         MovePortal* MP=fromPortalArray[j];
-
-        if (MP->getDirection() == direction)
-          {
-          Vector2 testVector2=MP->getLow2();
-          float z=connexionPts[MZArray[i]][fromPortalidArray[j]];
-          printf("from %f,%f (%f) portalid %u\n",testVector2.x,testVector2.y,z,fromPortalidArray[j]);
-          switch (direction)
-            {
-            case EXTEND_N :
-              printf("N\n");
-              testVector2.y+=1;
-            break;
-            case EXTEND_S :
-              printf("S\n");
-              testVector2.y-=1;
-            break;
-            case EXTEND_E :
-              printf("E\n");
-              testVector2.x+=1;
-            break;
-            case EXTEND_W :
-              printf("W\n");
-             testVector2.x-=1;
-            break;
-            
-            }
-          
-          printf("to %f,%f (%f)\n",testVector2.x,testVector2.y,z);
-          destMZ=NULL;
-          Array<MoveZone*> matchMZArray=destMoveZoneContainer->getMoveZonesByZRange(testVector2.x,testVector2.y,z - 0.5, z + 0.5); // z can be slightly different
-          if (matchMZArray.size() == 0)
-            {
-            printf("no match\n");
-            prevMP=NULL;
-            destMZ=NULL;
-            }
-          else if (matchMZArray.size() > 1)
-            {
-            printf("%u matches\n",matchMZArray.size() );
-            for (unsigned int k = 0 ; k< matchMZArray.size(); ++k)
-              printf("zone id %u\n",matchMZArray[k]->getIndex());
-            prevMP=NULL;
-            destMZ=NULL;
-            }
-          else
-            {
-            destMZ=matchMZArray[0];
-            printf("one match : %u\n",destMZ->getIndex());
-  
-            if (prevdestMZ == destMZ && prevMP && (prevTestVector2 - testVector2).length() <= 1)
-              {
-              // join portals
-              printf("joining\n");
-              prevMP->extend();
-              fromPortalArray.remove(fromPortalidArray[j]);
-              }
-            else
-              {
-              
-              printf("new portal beacause %s %s %s dist=%f\n",(prevdestMZ != destMZ?"mz differs":""),(prevMP?"":"no prevMP"),((prevTestVector2 - testVector2).length() > 1?"too far":""),(prevTestVector2 - testVector2).length());
-  
-              MP->setDestGrid(dx,dy);
-              }
-            
-            prevMP=MP;
-            }
-          prevTestVector2=testVector2;
-          prevdestMZ=destMZ;
-  
-          }
-        
+        if(fromPortalArray[j]->getDirection() == direction)
+          fromPortalTable.set(fromPortalArray[j]->getLow2(),fromPortalArray[j]);
         }
-*/    
-
+      Array<Vector2> fromPtArray = connexionPts[MZArray[i]].getKeys();
+      fromPtArray.sort(Vector2LT);
+      printf("in movezone %d : %u out of %u portals\n",fromMZ->getIndex(),fromPtArray.size(),fromPortalArray.size());
+      
+      prevMP=NULL;
       for (unsigned int pindex=0;pindex<fromPortalArray.size();pindex++)
-        printf ("MP[%u] : %f,%f\n",pindex,fromPortalArray[pindex]->getLow2().x,fromPortalArray[pindex]->getLow2().y);
+        printf ("MP[%u] : %f,%f -> %f,%f\n",pindex,fromPortalArray[pindex]->getLow2().x,fromPortalArray[pindex]->getLow2().y,fromPortalArray[pindex]->getHigh2().x,fromPortalArray[pindex]->getHigh2().y);
       unsigned int deletedPortals=0;
-      for(unsigned int j=0;j < fromPortalidArray.size() - deletedPortals; ++j)
+      
+      for(unsigned int j=0;j < fromPtArray.size(); ++j)
         {
-        MovePortal* MP=fromPortalArray[fromPortalidArray[j]-deletedPortals];
+        MovePortal* MP=fromPortalTable[fromPtArray[j]];
         Vector2 testVector2=MP->getLow2();
-        float z=connexionPts[MZArray[i]][fromPortalidArray[j]];
-        printf("from %f,%f (%f) portalid %u\n",testVector2.x,testVector2.y,z,fromPortalidArray[j]);
-        printf ("MP[%u] : %f,%f\n",fromPortalidArray[j],fromPortalArray[fromPortalidArray[j]-deletedPortals]->getLow2().x,fromPortalArray[fromPortalidArray[j]-deletedPortals]->getLow2().y);
+        float z=connexionPts[MZArray[i]][fromPtArray[j]];
+        printf("from %f,%f (%f)\n",testVector2.x,testVector2.y,z);
+        printf ("MP[%u] : %f,%f\n",j,fromPortalTable[fromPtArray[j]]->getLow2().x,fromPortalTable[fromPtArray[j]]->getLow2().y);
+        if (MP->getLow2() != MP->getHigh2())
+          {
+          printf("ERROR : MP %u of movezone %u is already extended (already connected ?)\n",j,fromMZ->getIndex());
+          printf("%f,%f -> %f,%f\naborting\n",MP->getLow2().x,MP->getLow2().y,MP->getHigh2().x,MP->getHigh2().y);
+          exit (0);
+          }
 
         switch (direction)
           {
@@ -290,7 +242,9 @@ namespace VMAP
             // join portals
             printf("joining\n");
             prevMP->extend();
-            fromPortalArray.remove(fromPortalidArray[j]-deletedPortals);
+            MP=prevMP;
+            printf("prev mp is now %f,%f -> %f,%f\n",prevMP->getLow2().x,prevMP->getLow2().y,prevMP->getHigh2().x,prevMP->getHigh2().y);
+            fromPortalArray.remove(fromPortalArray.findIndex(fromPortalTable[fromPtArray[j]]));
             deletedPortals++;
             }
           else
@@ -298,7 +252,8 @@ namespace VMAP
             
             printf("new portal beacause %s %s %s dist=%f\n",(prevdestMZ != destMZ?"mz differs":""),(prevMP?"":"no prevMP"),((prevTestVector2 - testVector2).length() > 1?"too far":""),(prevTestVector2 - testVector2).length());
 
-            MP->setDestGrid(dx,dy);
+            MP->setDestGridAndZone(dx,dy,destMZ->getIndex());
+            
             }
           
           prevMP=MP;

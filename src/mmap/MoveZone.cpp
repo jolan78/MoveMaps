@@ -126,6 +126,7 @@ namespace VMAP
     fwrite (&Y2,sizeof(float),1,fp);
     fwrite (&Z2,sizeof(float),1,fp);
     fwrite (&direction,sizeof(unsigned int),1,fp);
+    fwrite (&DestZoneID,sizeof(unsigned int),1,fp);
     fwrite (&destGridX,sizeof(unsigned int),1,fp);
     fwrite (&destGridY,sizeof(unsigned int),1,fp);
   }
@@ -142,6 +143,7 @@ namespace VMAP
     fread (&Y2,sizeof(float),1,fp);
     fread (&Z2,sizeof(float),1,fp);
     fread (&direction,sizeof(unsigned int),1,fp);
+    fread (&DestZoneID,sizeof(unsigned int),1,fp);
     fread (&destGridX,sizeof(unsigned int),1,fp);
     fread (&destGridY,sizeof(unsigned int),1,fp);
   }
@@ -534,13 +536,20 @@ namespace VMAP
             if (curpos.x<0 || curpos.x> pBoxBounds.high().x - pBoxBounds.low().x -1 ||
                curpos.y<0 || curpos.y> pBoxBounds.high().z - pBoxBounds.low().z -1)
               {
-              unsigned int* tmp=(unsigned int*)malloc(2*sizeof(unsigned int));
+              gridPortal gp;
+              gp.MoveZoneId=iMoveZone->getIndex();
+              gp.fromx=x;
+              gp.fromy=y;
+              gp.destz=curpos.z;
+              
+             /* unsigned int* tmp=(unsigned int*)malloc(2*sizeof(unsigned int));
               tmp[0]=iMoveZone->getIndex();
               tmp[1]=portalID;
               
               
 printf("gridportal : %u,%u %f,%f,%f\n",tmp[0],tmp[1],curpos.x,curpos.y,curpos.z);
-              gridPortals[direction].set(tmp,curpos.z);
+              gridPortals[direction].set(tmp,curpos.z);*/
+              gridPortals[direction].push_back(gp);
               }
             else
               printf("Connexion not found in MZ %d PortalCell %f,%f -> %f,%f,%f\n",iMoveZone->getIndex(),x,y,curpos.x,curpos.y,curpos.z);
@@ -580,11 +589,10 @@ printf("gridportal : %u,%u %f,%f,%f\n",tmp[0],tmp[1],curpos.x,curpos.y,curpos.z)
           prevpos=curpos;
           if (prevMZ)
             previsportal=true;
+          portalID++;
           }
         else
           previsportal=false;
-        
-        portalID++;
         }
       }
     
