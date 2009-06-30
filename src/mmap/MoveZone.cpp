@@ -151,7 +151,7 @@ namespace VMAP
   void
   MovePortal::reconnect(Array<MoveZone*>& moveZoneArray)
     {
-    if (destGridX && destGridY) // dest inside grid
+    if (destGridX == 0 && destGridY == 0) // dest inside grid
       DestZone=moveZoneArray[DestZoneID];
     }
   
@@ -535,7 +535,7 @@ namespace VMAP
         if (PortalCells->get(Vector2(x,y),curpos))
           {
           curMZ=getMoveZoneByCoords(curpos);
-
+          bool isGridPortal=false;
           if (curMZ == NULL)
             {
             // unfound portals should occur only at grid edge.
@@ -556,6 +556,8 @@ namespace VMAP
 printf("gridportal : %u,%u %f,%f,%f\n",tmp[0],tmp[1],curpos.x,curpos.y,curpos.z);
               gridPortals[direction].set(tmp,curpos.z);*/
               gridPortals[direction].push_back(gp);
+              
+              isGridPortal=true;
               }
             else
               printf("Connexion not found in MZ %d PortalCell %f,%f -> %f,%f,%f\n",iMoveZone->getIndex(),x,y,curpos.x,curpos.y,curpos.z);
@@ -588,6 +590,8 @@ printf("gridportal : %u,%u %f,%f,%f\n",tmp[0],tmp[1],curpos.x,curpos.y,curpos.z)
           else
             {
             CurrentPortal= new MovePortal(x,y,bounds.high().z,curpos.z, direction ,curMZ);// TODO : better manage z if needed
+            if (isGridPortal)
+              CurrentPortal->setGridPortal(INT_MAX,INT_MAX);
             iPortals.append(CurrentPortal);
             }
           prevMZ=curMZ;

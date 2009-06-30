@@ -24,6 +24,7 @@ namespace VMAP
     bool iShowBoxes;
     bool iShowZones;
     bool iShowPortals;
+    bool iShowPath;
     
     VARAreaRef iVARAreaRef;
     

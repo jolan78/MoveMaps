@@ -597,7 +597,7 @@ printf ("looking for %f,%f,%f\ngranularity %f\n",pPos.x,pPos.y,pPos.z,iGranulari
         fwrite (&pArraySize, 4, 1, output);
         for (unsigned int p=0; p<pArraySize; ++p)
           {
-          unsigned int pdest = Portals[p]->getDestination();
+          unsigned int pdest = Portals[p]->getDestinationID();
           fwrite (&pdest, 4, 1, output);
           unsigned int pdir = Portals[p]->getDirection();
           fwrite (&pdir, 4, 1, output);

@@ -66,8 +66,12 @@ namespace VMAP
     Vector3 getHigh() {return Vector3(X2,Y2,Z2); }
     Vector2 getLow2() {return Vector2(X1,Y1); }
     Vector2 getHigh2() {return Vector2(X2,Y2); }
-    unsigned int getDestination() { return DestZoneID; }
+    Vector2 getCenter2() {return Vector2(X1+(X2-X1)/2, Y1+(Y2-Y1)/2); }
+    unsigned int getDestinationID() { return DestZoneID; }
+    MoveZone* getDestination() { return DestZone; }
     unsigned int getDirection() { return direction; }
+    bool isGridPortal() {return (destGridX!=0 || destGridY!=0); };
+    void setGridPortal(unsigned int gridX,unsigned int gridY) { destGridX=gridX; destGridY=gridY; };
     void setDestGridAndZone(unsigned int x,unsigned int y,unsigned int zoneID) {destGridX=x,destGridY=y,DestZoneID=zoneID; }
   };
 

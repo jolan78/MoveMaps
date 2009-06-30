@@ -57,6 +57,7 @@ namespace VMAP
     iShowBoxes = false;
     iShowZones = false;
     iShowPortals = false;
+    iShowPath = false;
     
     iVARAreaRef = VARArea::create (settings.window.width * settings.window.height * 60 * 40); // thats huge !
 
@@ -313,6 +314,20 @@ namespace VMAP
                 rd->endIndexedPrimitives ();
               }
           }
+        else if (name.find ("2_path",0) != std::string::npos)
+          {
+            if (iShowPath)
+              {
+              
+                //rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+                rd->setColor (Color3(0, 0, 255));
+
+                rd->beginIndexedPrimitives ();
+                rd->setVertexArray (*var);
+                rd->sendIndices (RenderDevice::LINES, indexArray);
+                rd->endIndexedPrimitives ();
+              }
+          }
         else
           {
             if (iShowVMaps)
@@ -401,6 +416,7 @@ namespace VMAP
     Array<Box> gZoneArray;
     Array<Vector3> gPortalArray;
     Array<Vector3> gBadPortalArray;
+    Array<Vector3> gPathArray;
     
     // for the file name
     char buffer[50];
@@ -617,7 +633,7 @@ namespace VMAP
               mylow.x-=0.1f;
               myhigh.x-=0.1f;
               }
-          if (portals[p]->getDestination() == INT_MAX)
+          if (portals[p]->getDestinationID() == INT_MAX)
               {
               gBadPortalArray.push_back(Vector3(mylow.x,mylow.z,mylow.y));
               gBadPortalArray.push_back(Vector3(myhigh.x,myhigh.z,myhigh.y));
@@ -753,9 +769,49 @@ namespace VMAP
     iTriVarTable.set (name, new VAR (vpArray, iVARAreaRef));
     iTriIndexTable.set (name, ipArray);
 
+    // Add empty path array
+    Array<int> ipthArray;
+    Array<Vector3> vpthArray;
+
+    
+    sprintf(name,"2_path_%d-%d",x,y);
+
+    count = 0;
+    
+    char coordname[255];
+    sprintf (coordname, "%s/path_%03u_%02u_%02u.txt",startCoordsPath.c_str(), mapId, x, y);
+    FILE* f = fopen (coordname, "r");
+    if (f)
+      {
+      int bufferSize = 500;
+      char buffer[500];
+      float px, py, pz;
+      while (fgets (buffer, bufferSize - 1, f))
+        {
+        sscanf (buffer, "%f,%f,%f", &px, &py, &pz);
+        if(gPathArray.size() > 0)
+          gPathArray.push_back (Vector3 (px, pz, py));
+        // for the next line
+        gPathArray.push_back (Vector3 (px, pz, py));
+        }
+      fclose (f);
+      }
+    gPathArray.popDiscard();
+    
+    for(Array<Vector3>::Iterator iter = gPathArray.begin (); iter != gPathArray.end (); ++iter)
+      {
+        const Vector3& v = *iter;
+        vpthArray.append (v);
+        ipthArray.append (count++);
+      }
+    printf("Load %d path vertices\n",vpthArray.size());
+    iTriVarTable.set (name, new VAR (vpthArray, iVARAreaRef));
+    iTriIndexTable.set (name, ipthArray);
+    
     // Add Portals with dest not found
     Array<int> ibpArray;
     Array<Vector3> vbpArray;
+
 
     sprintf(name,"3_badportals_%d-%d",x,y);
 
@@ -776,6 +832,7 @@ namespace VMAP
     printf("Load %d badportals vertices\n",vbpArray.size());
     iTriVarTable.set (name, new VAR (vbpArray, iVARAreaRef));
     iTriIndexTable.set (name, ibpArray);
+    
     
     printf("total used : %dB , %dB (%f%%) free\n",iVARAreaRef->allocatedSize(),iVARAreaRef->freeSize(), 100.0f*iVARAreaRef->freeSize()/iVARAreaRef->totalSize());
     if (100.0f*iVARAreaRef->freeSize()/iVARAreaRef->totalSize() < 10)
@@ -919,6 +976,11 @@ namespace VMAP
     if (ui->keyPressed (GKey::fromString ("p")))
       {
         iShowPortals = !iShowPortals;
+      }
+    
+    if (ui->keyPressed (GKey::fromString ("i")))
+      {
+        iShowPath = !iShowPath;
       }
 
     if (ui->keyPressed (GKey::fromString ("h")))
