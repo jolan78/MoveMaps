@@ -14,8 +14,9 @@
 #define STRAIGHT_COST 10;
 #define DIAGONAL_COST 14;
 
-//#define MANHATTAN_DIST 1
-#define DIAGONAL_DIST 1
+// manhattan gives better result
+#define MANHATTAN_DIST 1
+//#define DIAGONAL_DIST 1
 
 
 using namespace G3D;
@@ -53,7 +54,7 @@ class PathGenerator {
   unsigned int getFastDistance(Vector2 orig,Vector2 dest)
   {
     #ifdef MANHATTAN_DIST
-      return STRAIGHT_COST * (abs(orig.x-dest.y) + abs(orig.y-dest.y));
+      return (abs(orig.x-dest.y) + abs(orig.y-dest.y)) * STRAIGHT_COST;
     #endif
     
     #ifdef DIAGONAL_DIST
@@ -126,7 +127,6 @@ class PathGenerator {
 
         if (!(*p)->isGridPortal() && !closedMZId.contains((*p)->getDestinationID()))
           { // it's not in the closed list
-          assert (((*p)->getDestinationID()) < 4000);
           Vector2 portalCenter=(*p)->getCenter2();
 
           PathNode* destPN;
@@ -146,17 +146,14 @@ class PathGenerator {
               destPN->distRemain=getFastDistance(portalCenter,pDest);
               destPN->score=destPN->distDone + destPN->distRemain;
               destPN->parent=PN;
-              assert (destPN->moveZone->getIndex() < 4000);
-              unsigned int dbgsize=openZones.size();
 //printf("rem\n");
 //printf("openZones: rem%u size%u\n",openZones.findIndex(destPN),openZones.size());
               openZones.fastRemove(openZones.findIndex(destPN));
-              assert (openZones.size() != dbgsize);
               unsigned int nodeIdx=openZones.size();
               while (nodeIdx > 0)
                 {
                 nodeIdx--;
-                if (destPN->score <= openZones[nodeIdx]->score)
+                if (destPN->score < openZones[nodeIdx]->score)
                   break;
                 }
 //printf("openZones insert at %d size%u\n",nodeIdx,openZones.size());
@@ -178,7 +175,7 @@ class PathGenerator {
             while (nodeIdx > 0)
               {
               nodeIdx--;
-              if (destPN->score <= openZones[nodeIdx]->score)
+              if (destPN->score < openZones[nodeIdx]->score)
                 break;
               }
 //printf("openZones insert at %d size%u\n",nodeIdx,openZones.size());

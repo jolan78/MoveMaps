@@ -1,5 +1,13 @@
 #include "MoveZone.h"
 #include <time.h>
+
+// width / height ration < 1.5
+// this increase nb of zones from 3000 to 8500 and doesnt give good results in my tests
+//#define PREFER_SQUARES
+// max crossable height diff *4, 7=1.75
+#define MAX_C_HEIGHT 7
+
+// debug defines
 //#define DEBUG_COORDS
 //#define DEBUG_PORTALS
 //#define LAYER_CONNEXION
@@ -12,9 +20,6 @@
 #ifdef DBGVECTOR
 Vector3 MZdbgVector=Vector3(15400.000000,15059.000000,92);
 #endif
-
-// max crossable height diff *4, 7=1.75
-#define MAX_C_HEIGHT 7
 
 namespace VMAP
 {
@@ -951,7 +956,18 @@ printf("\n");
            else
              {
              isportal=true;
-
+             #ifdef PREFER_SQUARES
+             if (addPortalToHigh && addPortalToLow)
+               {
+               if ((high.x-low.x)>(high.y-low.y))
+                 {
+                 if((high.x-low.x)/(high.y-low.y) >1.5)
+                   broken = true;
+                 }
+               else if((high.y-low.y)/(high.x-low.x) >1.5)
+                 broken = true;
+               }
+             #endif
 //             outcell[x-lineX1][y-lineY1]=true;// will be added to myOutOfZonePoints
 #ifdef DEBUG_COORDS
 printf("at %f:%f (%i,%i) OK\n",x+basePos.x,y+basePos.z,x, y);
