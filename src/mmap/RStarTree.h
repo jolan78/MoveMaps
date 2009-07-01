@@ -620,6 +620,36 @@ public:
     if (m_root)
 	  _save(fp ,m_root);
     }
+	/****************************************************************
+	 * Used to delete all leaves
+	 *
+	 * 
+	 ****************************************************************/
+    void
+    _deleteAll(RSTarNode* node)
+    {
+		if (node->hasLeaves)
+		{
+			for( std::vector<AABox* >::iterator it = node->items.begin(); it < node->items.end(); ++it)
+			{
+				delete ((Leaf*)(*it))->leaf;
+			}
+		}
+		else
+		{
+			for(typename std::vector< /*RSTarNode*/ AABox* >::iterator it = node->items.begin(); it < node->items.end(); ++it)
+			{
+				_deleteAll((RSTarNode*)(*it));
+			}
+		}
+    }
+
+    void
+    deleteAll()
+    {
+    if (m_root)
+	  _deleteAll(m_root);
+    }
 
 	/****************************************************************
 	 * Used to load the tree structure and leaves from a file.

@@ -42,6 +42,7 @@ class PathGenerator {
   MoveZoneContainer* pMoveZoneContainer;
   
   Array<PathNode*> openZones;
+  Array<PathNode*> closedZones;
   Table<unsigned int,PathNode*> openMZTable;
   Array<unsigned int> closedMZId;
 
@@ -66,6 +67,12 @@ class PathGenerator {
 
  public:
   PathGenerator(Vector3 orig,Vector3 dest,MoveZoneContainer* MZContainer) {pOrig=orig,pDest=dest,pMoveZoneContainer=MZContainer; } // TODO: use a load / unload manager
+  
+  ~PathGenerator()
+    {
+    openZones.deleteAll();
+    closedZones.deleteAll();
+    }
   
   void PrintPath()
     {
@@ -99,7 +106,7 @@ class PathGenerator {
       PN = openZones.pop(); // shrink array, slower but safer, perhaps not necessary shrink now ?
       assert(PN->moveZone);
       closedMZId.push_back(PN->moveZone->getIndex());
-      
+      closedZones.push_back(PN);
 //printf("poped\n");
       
       if (PN->moveZone == destMZ)

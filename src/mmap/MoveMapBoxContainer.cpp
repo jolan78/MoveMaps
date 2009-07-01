@@ -235,6 +235,7 @@ printf ("looking for %f,%f,%f\ngranularity %f\n",pPos.x,pPos.y,pPos.z,iGranulari
     iMoveMapBoxArray = NULL;
     iTreeNodes = NULL;
     iMoveMapConnectionManager = NULL;
+    iMoveZoneContainer = NULL;
   }
 
   //=============================================================
@@ -244,6 +245,7 @@ printf ("looking for %f,%f,%f\ngranularity %f\n",pPos.x,pPos.y,pPos.z,iGranulari
     if (iMoveMapBoxArray != NULL) delete[] iMoveMapBoxArray;
     if (iTreeNodes != NULL) delete[] iTreeNodes;
     if (iMoveMapConnectionManager != NULL) delete iMoveMapConnectionManager;
+    if (iMoveZoneContainer != NULL) delete iMoveZoneContainer;
   }
 
   //=============================================================

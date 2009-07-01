@@ -174,7 +174,7 @@ namespace VMAP
  void
  MoveZoneContainer::generate(const MoveMapBox* iMoveMapBoxArray,int iNMoveMapBoxes,AABox gridBounds) {
     
-    pMoveZones = new AABSPTree<MoveZone*>();
+    //pMoveZones = new AABSPTree<MoveZone*>();
     MZ_Tree = new RStarTree<MoveZone*>(2, 4);
     moveZoneIndex=0;
     time_t sec1;
@@ -251,7 +251,7 @@ namespace VMAP
                       AABox test= MZ->getBounds();
                       
                       //pMoveZones.append(*MZ);
-                      pMoveZones->insert(MZ);
+                      //pMoveZones->insert(MZ);
                       MZ_Tree->Insert(MZ);
                       pMoveZonesArray.append(MZ);
                       #ifdef DEBUG_ZONE_COMPLETE

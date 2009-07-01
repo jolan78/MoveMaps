@@ -1,7 +1,7 @@
 #ifndef _MOVEZONE_H_
 #define _MOVEZONE_H_
 
-#include "AABSPTree.h"
+//#include "AABSPTree.h"
 #include "RStarTree.h"
 
 #include <G3D/AABox.h>
@@ -54,6 +54,7 @@ namespace VMAP
     MovePortal (float pX1,float pY1,float pZ1,float tHeight,unsigned int pDirection, MoveZone* MZ);
     MovePortal (Vector3 low,Vector3 high/*debug*/,unsigned int destID,unsigned int pDirection);
     MovePortal () {};
+    ~MovePortal () {};
 
     void extend();
     void extend(float tHeight);
@@ -97,7 +98,10 @@ namespace VMAP
   public:
     MoveZone () { };
     MoveZone (const MoveMapBox* iMoveMapBox,unsigned int ZoneIndex,Vector2* sPos,Set<Vector2>* outOfZonePoints,Set<Vector2>* reachedPos,AABox iGridBounds);
-    ~MoveZone () {};
+    ~MoveZone ()
+      {
+      iPortals.deleteAll();
+      }
     void save(FILE* fp);
     void load(FILE* fp);
     void reconnectPortals(Array<MoveZone*>& moveZoneArray);
@@ -202,11 +206,6 @@ namespace VMAP
     bool operator== (const MoveZone& pMZ) const;
     size_t hashCode ();
     
-    /*bool operator>(const MoveZone& other) const
-      { return getIndex() > other.getIndex(); }
-    
-    bool operator<(const MoveZone& other) const
-      { return getIndex() < other.getIndex(); }*/
   };
   
   // to sort Array<MoveZone*> returned by MZ_Tree->load()
@@ -230,13 +229,9 @@ namespace VMAP
   class MoveZoneContainer
   {
   private:
-//    Array<MoveZone> pMoveZones;
-    AABSPTree<MoveZone*> *pMoveZones;
     RStarTree<MoveZone*> *MZ_Tree;
     Array<MoveZone*> pMoveZonesArray;
     unsigned int moveZoneIndex;
-    Vector3 basePos;
-    //Table<unsigned int*, float> gridPortals[4];
     Array<gridPortal> gridPortals[4];
     Set<Vector2> outOfZonePoints;
 
@@ -244,6 +239,11 @@ namespace VMAP
 
   public:
     MoveZoneContainer() {};
+    ~MoveZoneContainer()
+      {
+      MZ_Tree->deleteAll();
+      }
+    
     MoveZoneContainer(const MoveMapBox* iMoveMapBoxArray,int iNMoveMapBoxes,AABox gridBounds)
       {
       generate(iMoveMapBoxArray,iNMoveMapBoxes,gridBounds);
@@ -298,20 +298,7 @@ namespace VMAP
       return &gridPortals[direction];
       }
     
-    const Vector3
-    getBasePosition () const
-    {
-      return basePos;
-    }
-    
     void setZone(AABox* pBox,unsigned int i, Array<MovePortal*> * PArray);
-    
-    void
-    setBasePos (Vector3 pos) 
-    {
-      basePos=pos;
-    }
-
   };
 
   //========================================================
