@@ -648,7 +648,7 @@ printf ("looking for %f,%f,%f\ngranularity %f\n",pPos.x,pPos.y,pPos.z,iGranulari
           {
           //fprintf (GridCnx, "%u,%u,%f\n", itr->key[0], itr->key[1], itr->value);
           fprintf (GridCnx, "%u,%f,%f,%f\n", itr->MoveZoneId, itr->fromx, itr->fromy, itr->destz);
-          printf("writing %u,%f,%f,%f to %03u_%02u_%02u_%02u_%02u\n", itr->MoveZoneId, itr->fromx, itr->fromy, itr->destz, MapId, mapx, mapy, x_val, y_val);
+          //printf("writing %u,%f,%f,%f to %03u_%02u_%02u_%02u_%02u\n", itr->MoveZoneId, itr->fromx, itr->fromy, itr->destz, MapId, mapx, mapy, x_val, y_val);
           }
         fclose (GridCnx);
         }

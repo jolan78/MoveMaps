@@ -16,9 +16,9 @@
 //#define DEBUG_ZONE_COMPLETE
 // adds check in getLocalHeightAt() (and getLocalHeightAt) :
 //#define CHECK_POINTINBOUNDS
-//#define DBGVECTOR
+#define DBGVECTOR
 #ifdef DBGVECTOR
-Vector3 MZdbgVector=Vector3(15400.000000,15059.000000,92);
+Vector3 MZdbgVector=Vector3(15404.000000,15419.000000,125);
 #endif
 
 namespace VMAP
@@ -935,13 +935,15 @@ if ((testval != MOVEMAP_VALUE_CANT_REACH) && abs( (int)testval - (int)fromval) >
                {
                isportal=true;
                }
-             
-             // if the test point xy is out of layer or from pt z is near the floor/ceil of the layer then it could be a layer-to-layer (or grid) connexion
-             if (testval == MOVEMAP_VALUE_CANT_REACH) // FIXME  : maybe a FLOAT_HEIGHT_CANT_REACH val exists at a far away height
+             else 
                {
+               /* if the test point xy is out of layer or it is too far away then it could be a layer-to-layer (or grid) connexion
+               we cant rely on from pt z is near the floor/ceil of the layer due to layer box inside layer box cases
+               TODO: handle layerbox-inside-zone case : another point can be reachable in the current layer. perhaps remove zones with no portals to it could fix it.
+               */
                #ifdef DBGVECTOR
                if (MZdbgVector.x == x+ basePos.x+deltatestX && MZdbgVector.y == y+ basePos.z+deltatestY)
-                 printf("adding tempLayerConnexions at DBGVECTOR X,Y : %f,%f fromval : %f dist to floor : %f dist to ceil : %f\n",x+ basePos.x,y+ basePos.z,zMoveMapBox->getFloatHeight (fromval),fromval/4,((pBoxBounds.high().y-pBoxBounds.low().y)-fromval)/4);
+                 printf("adding tempLayerConnexions at DBGVECTOR X,Y : %f,%f fromval : %f dist to floor : %f dist to ceil : %f\n",x+ basePos.x,y+ basePos.z,zMoveMapBox->getFloatHeight (fromval),(float)fromval/4,(pBoxBounds.high().y-pBoxBounds.low().y)-((float)fromval/4));
                #endif
 
                tempLayerConnexions.set(Vector2(x+ pBoxBounds.low().x + deltatestX, y+ pBoxBounds.low().z + deltatestY),Vector3(x+ pBoxBounds.low().x, y+ pBoxBounds.low().z,fromval));
@@ -1014,17 +1016,7 @@ printf("not a portal at %f,%f\n",x+ basePos.x + deltatestX, y+ basePos.z + delta
 #ifdef DEBUG_PORTALS
 printf("while testing lowedge at %f,%f : Hdiff: %f testval: %f (%f,%f) : %f,%hd,%hd\n",lineX1 + deltatestX + basePos.x,lineY1 + deltatestY + basePos.z,zMoveMapBox->getFloatHeight (abs( (int)testval - (int)fromval)), zMoveMapBox->getFloatHeight (testval),lineX1+deltatestX+prevExtendCellX , lineY1+deltatestY+prevExtendCellY ,lineY1,deltatestY ,prevExtendCellY);
 #endif
-       // if the test point xy is out of layer or from pt z is near the floor/ceil of the layer then it could be a layer-to-layer (or grid) connexion
-       if (testval == MOVEMAP_VALUE_CANT_REACH)
-         {
-         
-         #ifdef DBGVECTOR
-         if (MZdbgVector.x == lineX1+ basePos.x+deltatestX && MZdbgVector.y == lineY1+ basePos.z+deltatestY)
-           printf("lowedge : adding LayerConnexions[%d] at DBGVECTOR X,Y : %f,%f fromval : %f dist to floor : %f dist to ceil : %f\n",lowEdgeDirection,lineX1+ basePos.x,lineY1+ basePos.z,zMoveMapBox->getFloatHeight (fromval),fromval/4,((pBoxBounds.high().y-pBoxBounds.low().y)-fromval)/4);
-         #endif
-         LayerConnexions[lowEdgeDirection].set(Vector2(lineX1 + deltatestX + basePos.x , lineY1 + deltatestY + basePos.z),Vector3(lineX1 + deltatestX + prevExtendCellX + basePos.x,lineY1 + deltatestY + prevExtendCellY + basePos.z, zMoveMapBox->getFloatHeight (fromval)));
-         }
-       else if (abs( (int)testval - (int)fromval) <= MAX_C_HEIGHT)
+       if (testval != MOVEMAP_VALUE_CANT_REACH && abs( (int)testval - (int)fromval) <= MAX_C_HEIGHT)
          {
 #ifdef DEBUG_PORTALS
 printf("cell - %f,%f -> %f,%f is a portal (%d,%d)\n",lineX1 + deltatestX + basePos.x,lineY1 + deltatestY + basePos.z,lineX1 + deltatestX + prevExtendCellX + basePos.x,lineY1 + deltatestY + prevExtendCellY + basePos.z,direction,extendermask);
@@ -1038,11 +1030,20 @@ printf("cell - %f,%f -> %f,%f is a portal (%d,%d)\n",lineX1 + deltatestX + baseP
          PortalCells[lowEdgeDirection].set(Vector2(lineX1 + deltatestX + basePos.x,lineY1 + deltatestY + basePos.z), 
                          Vector3(lineX1 + deltatestX + prevExtendCellX + basePos.x,lineY1 + deltatestY + prevExtendCellY + basePos.z, testval));
          }
+       else
+         {
+         #ifdef DBGVECTOR
+         if (MZdbgVector.x == lineX1+ basePos.x+deltatestX && MZdbgVector.y == lineY1+ basePos.z+deltatestY)
+           printf("lowedge : adding LayerConnexions[%d] at DBGVECTOR X,Y : %f,%f fromval : %f dist to floor : %f dist to ceil : %f\n",lowEdgeDirection,lineX1+ basePos.x,lineY1+ basePos.z,zMoveMapBox->getFloatHeight (fromval),fromval/4,((pBoxBounds.high().y-pBoxBounds.low().y)-fromval)/4);
+         #endif
+         LayerConnexions[lowEdgeDirection].set(Vector2(lineX1 + deltatestX + basePos.x , lineY1 + deltatestY + basePos.z),Vector3(lineX1 + deltatestX + prevExtendCellX + basePos.x,lineY1 + deltatestY + prevExtendCellY + basePos.z, zMoveMapBox->getFloatHeight (fromval)));
+         }
+       
        if (testval != MOVEMAP_VALUE_CANT_REACH /*&& !myOutOfZonePoints->contains(Vector2(lineX1 + deltatestX + prevExtendCellX,lineY1 + deltatestY + prevExtendCellY))*/)
          {
          #ifdef DBGVECTOR
          if ((MZdbgVector.x == lineX1 + deltatestX + prevExtendCellX + basePos.x && MZdbgVector.y == lineY1 + deltatestY + prevExtendCellY + basePos.z))
-           printf ("Adding DBGVECTOR LE to myOutOfZonePoints\n");
+           printf ("Adding DBGVECTOR LE to myOutOfZonePoints h:%f\n",zMoveMapBox->getFloatHeight (testval));
          #endif
 
          myOutOfZonePoints->insert(Vector2(lineX1 + deltatestX + prevExtendCellX,lineY1 + deltatestY + prevExtendCellY));
@@ -1061,18 +1062,7 @@ printf("cell - %f,%f -> %f,%f is a portal (%d,%d)\n",lineX1 + deltatestX + baseP
 #ifdef DEBUG_PORTALS
 printf("while testing highedge at %f,%f : Hdiff: %f testval: %f\n",lineX2 + deltatestX + basePos.x,lineY2 + deltatestY + basePos.z,zMoveMapBox->getFloatHeight(abs( (int)testval - (int)fromval)), zMoveMapBox->getFloatHeight (testval));
 #endif
-       // if the test point xy is out of layer or from pt z is near the floor/ceil of the layer then it could be a layer-to-layer (or grid) connexion
-       if (testval == MOVEMAP_VALUE_CANT_REACH)
-         {
-         #ifdef DBGVECTOR
-         if (MZdbgVector.x == lineX2+ basePos.x+deltatestX && MZdbgVector.y == lineY2+ basePos.z+deltatestY)
-           printf("highedge : adding LayerConnexions[%d] at DBGVECTOR X,Y : %f,%f fromval : %f dist to floor : %f dist to ceil : %f\n",highEdgeDirection,lineX2+ basePos.x,lineY2+ basePos.z,zMoveMapBox->getFloatHeight (fromval),fromval/4,((pBoxBounds.high().y-pBoxBounds.low().y)-fromval)/4);
-         #endif
-         
-         LayerConnexions[highEdgeDirection].set(Vector2(lineX2 + deltatestX + basePos.x , lineY2 + deltatestY + basePos.z),Vector3(lineX2 + deltatestX -prevExtendCellX + basePos.x,lineY2 + deltatestY -prevExtendCellY + basePos.z, zMoveMapBox->getFloatHeight (fromval)));
-         
-         }
-        else if (abs( (int)testval - (int)fromval) <= MAX_C_HEIGHT)
+        if (testval != MOVEMAP_VALUE_CANT_REACH && abs( (int)testval - (int)fromval) <= MAX_C_HEIGHT)
           {
 #ifdef DEBUG_PORTALS
 printf("cell + %f,%f -> %f,%f is a portal (%d,%d)\n",lineX2 + deltatestX + basePos.x,lineY2 + deltatestY + basePos.z,lineX2 + deltatestX -prevExtendCellX + basePos.x,lineY2 + deltatestY -prevExtendCellY + basePos.z,direction,extendermask);
@@ -1086,16 +1076,26 @@ printf("cell + %f,%f -> %f,%f is a portal (%d,%d)\n",lineX2 + deltatestX + baseP
           PortalCells[highEdgeDirection].set(Vector2(lineX2 + deltatestX + basePos.x,lineY2 + deltatestY + basePos.z), 
                           Vector3(lineX2 + deltatestX -prevExtendCellX + basePos.x,lineY2 + deltatestY -prevExtendCellY + basePos.z, testval));
           }
-       if (testval != MOVEMAP_VALUE_CANT_REACH/* && !myOutOfZonePoints->contains(Vector2(lineX2 + deltatestX -prevExtendCellX,lineY2 + deltatestY -prevExtendCellY))*/)
-         {
-         #ifdef DBGVECTOR
-         if ((MZdbgVector.x == lineX2 + deltatestX -prevExtendCellX + basePos.x && MZdbgVector.y == lineY2 + deltatestY -prevExtendCellY + basePos.z))
-           printf ("Adding DBGVECTOR HE to myOutOfZonePoints\n");
-         #endif
-
-         myOutOfZonePoints->insert(Vector2(lineX2 + deltatestX -prevExtendCellX,lineY2 + deltatestY -prevExtendCellY));
-         }
-       }
+        else
+          {
+          #ifdef DBGVECTOR
+          if (MZdbgVector.x == lineX2+ basePos.x+deltatestX && MZdbgVector.y == lineY2+ basePos.z+deltatestY)
+            printf("highedge : adding LayerConnexions[%d] at DBGVECTOR X,Y : %f,%f fromval : %f dist to floor : %f dist to ceil : %f\n",highEdgeDirection,lineX2+ basePos.x,lineY2+ basePos.z,zMoveMapBox->getFloatHeight (fromval),fromval/4,((pBoxBounds.high().y-pBoxBounds.low().y)-fromval)/4);
+          #endif
+          
+          LayerConnexions[highEdgeDirection].set(Vector2(lineX2 + deltatestX + basePos.x , lineY2 + deltatestY + basePos.z),Vector3(lineX2 + deltatestX -prevExtendCellX + basePos.x,lineY2 + deltatestY -prevExtendCellY + basePos.z, zMoveMapBox->getFloatHeight (fromval)));
+          
+          }
+        if (testval != MOVEMAP_VALUE_CANT_REACH/* && !myOutOfZonePoints->contains(Vector2(lineX2 + deltatestX -prevExtendCellX,lineY2 + deltatestY -prevExtendCellY))*/)
+          {
+          #ifdef DBGVECTOR
+          if ((MZdbgVector.x == lineX2 + deltatestX -prevExtendCellX + basePos.x && MZdbgVector.y == lineY2 + deltatestY -prevExtendCellY + basePos.z))
+            printf ("Adding DBGVECTOR HE to myOutOfZonePoints\n");
+          #endif
+ 
+          myOutOfZonePoints->insert(Vector2(lineX2 + deltatestX -prevExtendCellX,lineY2 + deltatestY -prevExtendCellY));
+          }
+        }
     
     
     if (broken)
@@ -1128,8 +1128,8 @@ if (PCorigs.length()>0);
       #ifdef DBGVECTOR
       if (tmpOutOfZonePoints.contains(Vector2(MZdbgVector.x -basePos.x, MZdbgVector.y -basePos.z)))
         printf ("should add DBGVECTOR from tmp to myOutOfZonePoints\n");
-      for(Set<Vector2>::Iterator itr= tmpOutOfZonePoints.begin(); itr != tmpOutOfZonePoints.end(); ++itr)
-        printf ("myOutOfZonePoints %f,%f\n",(*itr).x +basePos.x, (*itr).y +basePos.z);
+      /*for(Set<Vector2>::Iterator itr= tmpOutOfZonePoints.begin(); itr != tmpOutOfZonePoints.end(); ++itr)
+        printf ("myOutOfZonePoints %f,%f\n",(*itr).x +basePos.x, (*itr).y +basePos.z);*/
       #endif
       for(Set<Vector2>::Iterator itr= tmpOutOfZonePoints.begin(); itr != tmpOutOfZonePoints.end(); ++itr)
         {
