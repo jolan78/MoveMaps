@@ -69,17 +69,18 @@ main (int argc, char** argv)
       delete pathGen;
       if (result != PATH_FOUND)
         {
-        /*printf("path failed(%u) (%f,%f,%f) -> %f,%f,%f\n",result,benchPoints[orig].x,benchPoints[orig].y,benchPoints[orig].z,benchPoints[dest].x,benchPoints[dest].y,benchPoints[dest].z);
+        printf("path failed(%u) (%f,%f,%f) -> %f,%f,%f\n",result,benchPoints[orig].x,benchPoints[orig].y,benchPoints[orig].z,benchPoints[dest].x,benchPoints[dest].y,benchPoints[dest].z);
         VMAP::PathGenerator* pathGen = new VMAP::PathGenerator(benchPoints[dest],benchPoints[orig],MZcontainer);
         result = pathGen->GeneratePath();
         if (result == PATH_FOUND)
           {
           printf("backward path works !\n");
           pathGen->PrintPath();
+          return 0;
           }
         n++;
         delete pathGen;
-        */
+        
         failedPaths++;
         }
       if(n>maxPath)

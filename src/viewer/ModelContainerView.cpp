@@ -286,6 +286,20 @@ namespace VMAP
                 rd->endIndexedPrimitives ();
               }
           }
+        else if (name.find ("4_pzones",0) != std::string::npos)
+          {
+            if (iShowPath)
+              {
+              
+                rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+                rd->setColor (Color4(0, 0, 255, 0.4f));
+
+                rd->beginIndexedPrimitives ();
+                rd->setVertexArray (*var);
+                rd->sendIndices (RenderDevice::QUADS, indexArray);
+                rd->endIndexedPrimitives ();
+              }
+          }
         else if (name.find ("2_portals",0) != std::string::npos)
           {
             if (iShowPortals)
@@ -410,7 +424,7 @@ namespace VMAP
   {
     // Create a MoveMapContainer that represents the tile
     // Todo later maybe store the container
-    MoveMapContainer moveMapBoxContainer;
+    MoveMapContainer* moveMapBoxContainer=new MoveMapContainer();
     // Show the bounding boxes of the MoveMapBoxes
     Array<Box> gBoxArray;
     Array<Box> gZoneArray;
@@ -434,11 +448,11 @@ namespace VMAP
     int count = 0;
     
     sprintf (buffer, "%03u_%02u_%02u", mapId, x, y);
-    moveMapBoxContainer.load (gMMapDataDir.c_str(),buffer);
+    moveMapBoxContainer->load (gMMapDataDir.c_str(),buffer);
 
-    for (unsigned int i = 0; i < moveMapBoxContainer.getNMoveMapBoxes (); ++i)
+    for (unsigned int i = 0; i < moveMapBoxContainer->getNMoveMapBoxes (); ++i)
       {
-        const MoveMapBox& moveMapBox = moveMapBoxContainer.getMoveMapBox (i);
+        const MoveMapBox& moveMapBox = moveMapBoxContainer->getMoveMapBox (i);
         const Vector3 basePos = moveMapBox.getBasePosition ();
 
         // draw the move map box for debugging
@@ -580,7 +594,7 @@ namespace VMAP
     sprintf (maprefbuffer, "%02u:%02u", x, y);
     std::string mapref=maprefbuffer;
     printf ("loading map %s\n",mapref.c_str());
-    iMoveZoneContainers.set(mapref,moveMapBoxContainer.getMoveZoneContainer());
+    iMoveZoneContainers.set(mapref,moveMapBoxContainer->getMoveZoneContainer());
     //const Vector3 basePos = iMoveZoneContainer->getBasePosition ();
     //printf("ZoneContainer at %f,%f,%f\n",basePos.x,basePos.z,basePos.y);
     Array<MoveZone*> iMoveZoneArray=iMoveZoneContainers[mapref]->getMoveZoneArray();
@@ -1008,6 +1022,208 @@ namespace VMAP
     if (command[0] == "exit")
       {
       setExitCode(0);
+      return;
+      }
+    if (command[0] == "add")
+      {
+      unsigned int argnb=1;
+      if (command.size()<argnb+1 || command[argnb] != "path")
+        {
+        consolePrintf("syntax error");
+        return;
+        }
+      if (command.size()<argnb+1)
+        {
+        consolePrintf("syntax error");
+        return;
+        }
+        
+      std::string mapref=command[++argnb];
+      const MoveZoneContainer* iMZcontainer;
+      if (!iMoveZoneContainers.get(mapref,iMZcontainer))
+        {
+        consolePrintf("map %s is not loaded",mapref.c_str());
+        return;
+        }
+
+      // adding path by coords
+      if (command.size()<argnb + 6)
+        {
+        consolePrintf("syntax error");
+        return;
+        }
+      
+      Vector3 orig = Vector3(atof(command[argnb+1].c_str()), atof(command[argnb+2].c_str()), atof(command[argnb+3].c_str()));
+      Vector3 dest = Vector3(atof(command[argnb+4].c_str()), atof(command[argnb+5].c_str()), atof(command[argnb+6].c_str()));
+      
+      printf("looking for path %f,%f,%f -> %f,%f,%f\n",orig.x,orig.y,orig.z,dest.x,dest.y,dest.z);
+      
+      PathGenerator* pathGen = new PathGenerator(orig,dest,iMZcontainer);
+      unsigned int result = pathGen->GeneratePath();
+      
+      if (result == ERR_ORIG_NOT_FOUND)
+        {
+        consolePrintf("orig is not inside a zone");
+        return;
+        }
+      else if (result == ERR_DEST_NOT_FOUND)
+        {
+        consolePrintf("dest is not inside a zone");
+        return;
+        }
+      else if (result == PATH_FOUND)
+        {
+        char name[14];
+        Array<std::string> gridCoords = stringSplit(command[2],':');
+        if (gridCoords.size()<0)
+          {
+          consolePrintf("syntax error");
+          return;
+          }
+        sprintf(name,"2_path_%d-%d",gridCoords[0].c_str(),gridCoords[1].c_str());
+        // Add empty path array
+        Array<Vector3> gPathArray;
+        Array<Vector3> iPath = pathGen->getPathArray();
+        
+        for (unsigned int pathIdx=0; pathIdx < iPath.size(); ++pathIdx)
+          {
+          if(gPathArray.size() > 0)
+            gPathArray.push_back (iPath[pathIdx]);
+          // for the next line
+          gPathArray.push_back (iPath[pathIdx]);
+          }
+        gPathArray.popDiscard();
+        
+        Array<int> ipthArray;
+        Array<Vector3> vpthArray;
+        
+        unsigned int count = 0;
+        for(Array<Vector3>::Iterator iter = gPathArray.begin (); iter != gPathArray.end (); ++iter)
+          {
+          const Vector3& v = *iter;
+          vpthArray.append (v);
+          ipthArray.append (count++);
+          }
+        printf("Loaded %d path vertices\n",vpthArray.size());
+        iTriVarTable.set (name, new VAR (vpthArray, iVARAreaRef));
+        iTriIndexTable.set (name, ipthArray);
+        }
+      else if (result == PATH_NOT_FOUND)
+        {
+        consolePrintf("path not found");
+        Array<unsigned int> visitedMZ = pathGen->getVisitedCells();
+        
+        printf("%d visited cells, first:%u\n",visitedMZ.size(),visitedMZ[1]);
+        
+
+        // Add the Zones
+        Array<int> izArray;
+        Array<Vector3> vzArray;
+        char name[20];
+        Array<std::string> gridCoords = stringSplit(command[2],':');
+        if (gridCoords.size()<0)
+          {
+          consolePrintf("syntax error");
+          return;
+          }
+        sprintf(name,"4_pzones_%s-%s",gridCoords[0].c_str(),gridCoords[1].c_str());
+        
+        unsigned int count = 0;
+        AABox b;
+
+        for(unsigned int mzidx=0;mzidx<visitedMZ.size();++mzidx)
+          {
+          const MoveZone* iMoveZone=iMZcontainer->getZone(visitedMZ[mzidx]);
+          const AABox ob = iMoveZone->getBounds();
+          b.set(Vector3(ob.low().x, ob.low().z, ob.low().y), Vector3(ob.high().x, ob.high().z, ob.high().y));
+          
+          for (int i = 0; i < 8; i++)
+            vzArray.append (Box(b).corner (i));
+
+          // side 1
+          izArray.append (count);
+          izArray.append (count + 1);
+          izArray.append (count + 2);
+          izArray.append (count + 3);
+
+          // side 1 back
+          izArray.append (count + 3);
+          izArray.append (count + 2);
+          izArray.append (count + 1);
+          izArray.append (count);
+        
+          // side 2
+          izArray.append (count + 4);
+          izArray.append (count + 5);
+          izArray.append (count + 6);
+          izArray.append (count + 7);
+        
+          // side 2 back
+          izArray.append (count + 7);
+          izArray.append (count + 6);
+          izArray.append (count + 5);
+          izArray.append (count + 4);
+        
+          // side 3
+          izArray.append (count + 1);
+          izArray.append (count + 2);
+          izArray.append (count + 6);
+          izArray.append (count + 5);
+        
+          // side 3 back
+          izArray.append (count + 5);
+          izArray.append (count + 6);
+          izArray.append (count + 2);
+          izArray.append (count + 1);
+        
+          // side 4
+          izArray.append (count + 0);
+          izArray.append (count + 3);
+          izArray.append (count + 7);
+          izArray.append (count + 4);
+        
+          // side 4 back
+          izArray.append (count + 4);
+          izArray.append (count + 7);
+          izArray.append (count + 3);
+          izArray.append (count + 0);
+        
+          // side 5
+          izArray.append (count + 2);
+          izArray.append (count + 3);
+          izArray.append (count + 7);
+          izArray.append (count + 6);
+        
+          // side 5 back
+          izArray.append (count + 6);
+          izArray.append (count + 7);
+          izArray.append (count + 3);
+          izArray.append (count + 2);
+        
+          // side 6
+          izArray.append (count + 0);
+          izArray.append (count + 1);
+          izArray.append (count + 5);
+          izArray.append (count + 4);
+        
+          // side 6 back
+          izArray.append (count + 4);
+          izArray.append (count + 5);
+          izArray.append (count + 1);
+          izArray.append (count + 0);
+
+          count += 8;
+        
+          }
+        
+        printf("added %d visited cell vertices\n",vzArray.size());
+
+        iTriVarTable.set (name, new VAR (vzArray, iVARAreaRef));
+        iTriIndexTable.set (name, izArray);
+        
+        return;
+        }
+
       return;
       }
     

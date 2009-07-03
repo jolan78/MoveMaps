@@ -5,6 +5,7 @@
 #include <G3D/G3DAll.h>
 #include "ModelContainer.h"
 #include "MoveMapBoxContainer.h"
+#include "PathGenerator.h"
 #include "MoveZone.h"
 
 namespace VMAP

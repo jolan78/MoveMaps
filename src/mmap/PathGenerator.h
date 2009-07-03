@@ -39,7 +39,7 @@ class PathGenerator {
   Array<Vector3> Path;
   Vector3 pOrig;
   Vector3 pDest;
-  MoveZoneContainer* pMoveZoneContainer;
+  const MoveZoneContainer* pMoveZoneContainer;
   
   Array<PathNode*> openZones;
   Array<PathNode*> closedZones;
@@ -66,7 +66,7 @@ class PathGenerator {
   }
 
  public:
-  PathGenerator(Vector3 orig,Vector3 dest,MoveZoneContainer* MZContainer) {pOrig=orig,pDest=dest,pMoveZoneContainer=MZContainer; } // TODO: use a load / unload manager
+  PathGenerator(Vector3 orig,Vector3 dest,const MoveZoneContainer* MZContainer) {pOrig=orig,pDest=dest,pMoveZoneContainer=MZContainer; } // TODO: use a load / unload manager
   
   ~PathGenerator()
     {
@@ -78,6 +78,18 @@ class PathGenerator {
     {
     for (unsigned int i=0;i<Path.size();++i)
       printf("%f,%f,%f\n",Path[i].x,Path[i].y,Path[i].z);
+    }
+
+  Array<Vector3>&
+  getPathArray()
+    {
+    return Path;
+    }
+  
+  Array<unsigned int>&
+  getVisitedCells()
+    {
+    return closedMZId;
     }
   
   unsigned int
