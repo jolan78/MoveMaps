@@ -809,8 +809,8 @@ namespace VMAP
         gPathArray.push_back (Vector3 (px, pz, py));
         }
       fclose (f);
+      gPathArray.popDiscard();
       }
-    gPathArray.popDiscard();
     
     for(Array<Vector3>::Iterator iter = gPathArray.begin (); iter != gPathArray.end (); ++iter)
       {

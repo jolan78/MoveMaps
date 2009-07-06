@@ -30,7 +30,9 @@ main (int argc, char** argv)
       printf ("Need 8 arguments: MapId, Map X coord, Map y coord, start zoneID, dest zoneID");
       return 1;
     }
-
+  time_t begin;
+  time_t end;
+  
   Config conf;
   conf.SetSource ("mmap.conf");
   
@@ -44,6 +46,7 @@ main (int argc, char** argv)
   
   VMAP::MoveZoneContainer* MZcontainer =  moveMapBoxContainer.getMoveZoneContainer();
   printf("preparing\n");
+  
   Array<Vector3> benchPoints;
   for (unsigned int zone=0;zone<MZcontainer->getNZones();zone++)
     benchPoints.push_back(MZcontainer->getZone(zone)->getBounds().center());
@@ -54,14 +57,14 @@ main (int argc, char** argv)
   Vector3 dest=destMZ->getBounds().center();*/
   printf("benching\n");
   
-  time_t begin;
   time(&begin);
   unsigned int n=0;
   unsigned int maxPath=30000;
   unsigned int failedPaths=0;
-  for (int orig=0;orig<benchPoints.size();++orig)
+  for (int dest=benchPoints.size()-1;dest>0;--dest)
     {
-    for (int dest=benchPoints.size()-1;dest>0;--dest)
+    int orig=benchPoints.size()-dest;
+    //for (int orig=0;orig<benchPoints.size();++orig)
       {
       VMAP::PathGenerator* pathGen = new VMAP::PathGenerator(benchPoints[orig],benchPoints[dest],MZcontainer);
       unsigned int result = pathGen->GeneratePath();
@@ -75,29 +78,45 @@ main (int argc, char** argv)
         if (result == PATH_FOUND)
           {
           printf("backward path works !\n");
-          pathGen->PrintPath();
-          return 0;
+          //pathGen->PrintPath();
+          //return 0;
           }
         n++;
         delete pathGen;
         
         failedPaths++;
         }
-      if(n>maxPath)
+      if(!(n%500))
         {
-        time_t end;
         time(&end);
 
-        printf("done : %u paths (%u failed) in %u secs. : %f path/s\n",n,failedPaths,(end-begin),(float)n / (float)(end-begin));
-        return 0;
+        printf("##%u paths (%u failed) in %u secs. : %f path/s\n",n,failedPaths,(end-begin),(float)n / (float)(end-begin));
+        if (n>maxPath)
+          return 0;
         }
       }
     }
-  time_t end;
   time(&end);
 
   printf("done : %u paths (%u failed) in %u secs. : %f path/s\n",n,failedPaths,(end-begin),(float)n / (float)(end-begin));
-    
+  
+  time(&begin);
+  printf("benchmark of R*Tree lookups :\n");
+  unsigned int f=0;
+  for (int i=0;i<5000000;++i)
+    {
+    int n=(i%(benchPoints.size()-1));
+    VMAP::MoveZone* startMZ = MZcontainer->getMoveZoneByCoords(benchPoints[n]);
+    if (startMZ == NULL)
+      {
+      printf("lookup failed, point %u : %f,%f,%f\n",n, benchPoints[n].x,benchPoints[n].y,benchPoints[n].z);
+      f++;
+      }
+    }
+  time(&end);
+  printf("done : 3,000,000 lookups in %u secs. %u failed: %f lookup/s (2 lookups per path needed)\n",(end-begin),f,3000000 / (float)(end-begin));
+  
+  
   /*unsigned int result = pathGen->GeneratePath();
   
   printf("Path %u:%f,%f,%f -> %u:%f,%f,%f\n",atoi(argv[4]),orig.x,orig.y,orig.z,atoi(argv[5]),dest.x,dest.y,dest.z);
