@@ -613,12 +613,10 @@ namespace VMAP
       gZoneArray.push_back(Box(ab));
       const Array<MovePortal*> portals = iMoveZone->getPortalArray();
       //DEBUG: printf("%d portals\n",portals.size());
-     // if (iMoveZone->getIndex() == 0)
         for (unsigned int p = 0; p< portals.size(); ++p)
           {
-          //DEBUG: printf("portal %d at %f,%f %f\n",p,portals[p]->getLow().x,portals[p]->getLow().y,portals[p]->getLow().z);
-          Vector3 mylow=portals[p]->getLow();
-          Vector3 myhigh=portals[p]->getHigh();
+          Vector3 mylow=Vector3(portals[p]->getLow2(),iMoveZone->getBounds().high().z);
+          Vector3 myhigh=Vector3(portals[p]->getHigh2(),iMoveZone->getBounds().high().z);
           if (portals[p]->getDirection() == EXTEND_N)
               {
               mylow.x-=0.3f;

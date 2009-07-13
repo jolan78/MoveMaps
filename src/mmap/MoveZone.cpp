@@ -24,11 +24,10 @@ Vector3 MZdbgVector=Vector3(15404.000000,15419.000000,125);
 namespace VMAP
 {
 
-  MovePortal::MovePortal (float pX1,float pY1,float pZ1,float tHeight,unsigned int pDirection, MoveZone* MZ)
+  MovePortal::MovePortal (Vector2 pCenter,float tHeight,unsigned int pDirection, MoveZone* MZ)
     {
-    X1=X2=pX1;
-    Y1=Y2=pY1;
-    Z1=Z2=pZ1; // debug
+    center=pCenter;
+    radius=0;
     destGridX=destGridY=0;
     tempHeight.append(tHeight);
     DestZoneID= (MZ!=NULL? MZ->getIndex() :INT_MAX);
@@ -37,30 +36,20 @@ namespace VMAP
     direction=pDirection;
     }
 
-  MovePortal::MovePortal (Vector3 low,Vector3 high/*debug*/,unsigned int destID,unsigned int pDirection)
-    {
-    X1=low.x;
-    Y1=low.y;
-    Z1=low.z;
-    X2=high.x;
-    Y2=high.y;
-    Z2=high.z;
-    DestZoneID=destID;
-    direction=pDirection;
-    }
   
   void
   MovePortal::extend()
     {
+    radius+=0.5;
     switch (direction)
       {
       case EXTEND_N :
       case EXTEND_S :
-        X2+=1;
+        center.x+=0.5;
         break;
       case EXTEND_E :
       case EXTEND_W :
-        Y2+=1;
+        center.y+=0.5;
         break;
       }
     }
@@ -77,7 +66,25 @@ namespace VMAP
     {
     unsigned int i=0;
     MoveZone* prevMZ=NULL;
+    float X1=center.x;
+    float X2=center.x;
+    float Y1=center.y;
+    float Y2=center.y;
     
+    switch (direction)
+      {
+      case EXTEND_N :
+      case EXTEND_S :
+        X1-=radius;
+        X2+=radius;
+        break;
+      case EXTEND_E :
+      case EXTEND_W :
+        Y1-=radius;
+        Y2+=radius;
+        break;
+      }
+
     for (float x=X1;x<=X2;x++)
       {
       for (float y=Y1;y<=Y2;y++)
@@ -124,12 +131,10 @@ namespace VMAP
   {
     fwrite (&DestZoneID,sizeof(unsigned int),1,fp);
 
-    fwrite (&X1,sizeof(float),1,fp);
-    fwrite (&Y1,sizeof(float),1,fp);
-    fwrite (&Z1,sizeof(float),1,fp);
-    fwrite (&X2,sizeof(float),1,fp);
-    fwrite (&Y2,sizeof(float),1,fp);
-    fwrite (&Z2,sizeof(float),1,fp);
+    
+    fwrite (&center.x,sizeof(float),1,fp);
+    fwrite (&center.y,sizeof(float),1,fp);
+    fwrite (&radius,sizeof(float),1,fp);
     fwrite (&direction,sizeof(unsigned int),1,fp);
     fwrite (&DestZoneID,sizeof(unsigned int),1,fp);
     fwrite (&destGridX,sizeof(unsigned int),1,fp);
@@ -141,12 +146,9 @@ namespace VMAP
   {
     fread (&DestZoneID,sizeof(unsigned int),1,fp);
 
-    fread (&X1,sizeof(float),1,fp);
-    fread (&Y1,sizeof(float),1,fp);
-    fread (&Z1,sizeof(float),1,fp);
-    fread (&X2,sizeof(float),1,fp);
-    fread (&Y2,sizeof(float),1,fp);
-    fread (&Z2,sizeof(float),1,fp);
+    fread (&center.x,sizeof(float),1,fp);
+    fread (&center.y,sizeof(float),1,fp);
+    fread (&radius,sizeof(float),1,fp);
     fread (&direction,sizeof(unsigned int),1,fp);
     fread (&DestZoneID,sizeof(unsigned int),1,fp);
     fread (&destGridX,sizeof(unsigned int),1,fp);
@@ -159,7 +161,43 @@ namespace VMAP
     if (destGridX == 0 && destGridY == 0) // dest inside grid
       DestZone=moveZoneArray[DestZoneID];
     }
-  
+
+  Vector2
+  MovePortal::getLow2()
+    {
+    switch (direction)
+      {
+      case EXTEND_N :
+      case EXTEND_S :
+        return Vector2(center.x-radius,center.y);
+        break;
+      case EXTEND_E :
+      case EXTEND_W :
+        return Vector2(center.x,center.y-radius);
+        break;
+      default:
+        assert(false);
+      }
+    }
+    
+  Vector2
+  MovePortal::getHigh2()
+    {
+    switch (direction)
+      {
+      case EXTEND_N :
+      case EXTEND_S :
+        return Vector2(center.x+radius,center.y);
+        break;
+      case EXTEND_E :
+      case EXTEND_W :
+        return Vector2(center.x,center.y+radius);
+        break;
+      default:
+        assert(false);
+      }
+    }
+
   size_t hashCode (const MoveZone* pMZ)
     {
     return pMZ->getBounds ().hashCode ();
@@ -451,7 +489,7 @@ namespace VMAP
             else
               {
               //printf("new portal\n");
-              CurrentPortal= new MovePortal(x,y,bounds.high().z,curpos.z, direction ,curMZ);// TODO : better manage z if needed
+              CurrentPortal= new MovePortal(Vector2(x,y),curpos.z, direction ,curMZ);// TODO : better manage z if needed
               iPortals.append(CurrentPortal);
               }
             }
@@ -594,7 +632,7 @@ printf("gridportal : %u,%u %f,%f,%f\n",tmp[0],tmp[1],curpos.x,curpos.y,curpos.z)
             }
           else
             {
-            CurrentPortal= new MovePortal(x,y,bounds.high().z,curpos.z, direction ,curMZ);// TODO : better manage z if needed
+            CurrentPortal= new MovePortal(Vector2(x,y),curpos.z, direction ,curMZ);// TODO : better manage z if needed
             if (isGridPortal)
               CurrentPortal->setGridPortal(INT_MAX,INT_MAX);
             iPortals.append(CurrentPortal);
@@ -1199,7 +1237,7 @@ printf("removing myOutOfZonePoints %f,%f : reached\n",x,y);
   // to sort Array<MovePortal*>
   static bool MovePortalLT(MovePortal*const& elem1, MovePortal*const& elem2)
     {
-    return elem1->getLow2().x < elem2->getLow2().x || elem1->getLow2().y < elem2->getLow2().y;
+    return elem1->getCenter2().x < elem2->getCenter2().x || elem1->getCenter2().y < elem2->getCenter2().y;
     }
 
   void

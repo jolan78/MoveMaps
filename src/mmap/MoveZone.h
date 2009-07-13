@@ -45,14 +45,13 @@ namespace VMAP
     //unsigned int DestLayerID;
     unsigned int DestZoneID;
     MoveZone* DestZone;
-    float X1, Y1, Z1;
-    float X2, Y2, Z2;
+    Vector2 center;
+    float radius;
     unsigned int direction;
     unsigned int destGridX,destGridY;
     Array<float> tempHeight;
   public:
-    MovePortal (float pX1,float pY1,float pZ1,float tHeight,unsigned int pDirection, MoveZone* MZ);
-    MovePortal (Vector3 low,Vector3 high/*debug*/,unsigned int destID,unsigned int pDirection);
+    MovePortal (Vector2 pCenter,float tHeight,unsigned int pDirection, MoveZone* MZ);
     MovePortal () {};
     ~MovePortal () {};
 
@@ -62,12 +61,10 @@ namespace VMAP
     void save(FILE* fp);
     void load(FILE* fp);
     void reconnect(Array<MoveZone*>& moveZoneArray);
-
-    Vector3 getLow() {return Vector3(X1,Y1,Z1); }
-    Vector3 getHigh() {return Vector3(X2,Y2,Z2); }
-    Vector2 getLow2() {return Vector2(X1,Y1); }
-    Vector2 getHigh2() {return Vector2(X2,Y2); }
-    Vector2 getCenter2() {return Vector2(X1+(X2-X1)/2, Y1+(Y2-Y1)/2); }
+    Vector2 getLow2();
+    Vector2 getHigh2();
+    
+    Vector2 getCenter2() {return center; }
     unsigned int getDestinationID() { return DestZoneID; }
     MoveZone* getDestination() { return DestZone; }
     unsigned int getDirection() { return direction; }
