@@ -18,6 +18,10 @@
 #define MANHATTAN_DIST 1
 //#define DIAGONAL_DIST 1
 
+// slower but more accurate pathfinding
+// allows faster path stretching
+#define THREE_PTS_PER_PORTAL 1
+
 using namespace G3D;
 
 struct PathNode {
@@ -121,7 +125,7 @@ namespace VMAP
           thats when we consider we found the path instead of when we add it to the open list
           if we use weighted path */
           do {
-            // TODO : that's where we should stretch the path
+            // TODO : that's where we can stretch the path, or we can do it in movement generator
             Path.insert(0,Vector3(PN->position,PN->moveZone->getBounds().high().z));
             PN=PN->parent;
           } while(PN != NULL);
@@ -135,7 +139,26 @@ namespace VMAP
           {
           if (!(*p)->isGridPortal() && !closedMZId.contains((*p)->getDestinationID()))
             { // it's not in the closed list
+            
+            #ifdef THREE_PTS_PER_PORTAL
+            for (unsigned int pnb=0; pnb<3;++pnb)
+              {
+              Vector2 portalCenter;
+              switch (pnb)
+                {
+                case 0:
+                  portalCenter=(*p)->getLow2();
+                  break;
+                case 1:
+                  portalCenter=(*p)->getCenter2();
+                  break;
+                case 2:
+                  portalCenter=(*p)->getHigh2();
+                  break;
+                }
+            #else
             Vector2 portalCenter=(*p)->getCenter2();
+            #endif
 
             PathNode* destPN;
             if (openMZTable.get((*p)->getDestinationID(),destPN))
@@ -185,6 +208,10 @@ namespace VMAP
               }
             }
           // TODO : else manage nearby grid load
+          
+          #ifdef THREE_PTS_PER_PORTAL
+            }
+          #endif
           }
       } while (openZones.size());
       return PATH_NOT_FOUND;

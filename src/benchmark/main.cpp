@@ -103,7 +103,7 @@ main (int argc, char** argv)
   time(&begin);
   printf("benchmark of R*Tree lookups :\n");
   unsigned int f=0;
-  for (int i=0;i<5000000;++i)
+  for (int i=0;i<3000000;++i)
     {
     int n=(i%(benchPoints.size()-1));
     VMAP::MoveZone* startMZ = MZcontainer->getMoveZoneByCoords(benchPoints[n]);
@@ -116,12 +116,14 @@ main (int argc, char** argv)
   time(&end);
   printf("done : 3,000,000 lookups in %u secs. %u failed: %f lookup/s (2 lookups per path needed)\n",(end-begin),f,3000000 / (float)(end-begin));
   
+  printf("path exemple :\n");
+  VMAP::PathGenerator* pathGen = new VMAP::PathGenerator(benchPoints[0],benchPoints[benchPoints.size()-1],MZcontainer);
+
+  unsigned int result = pathGen->GeneratePath();
   
-  /*unsigned int result = pathGen->GeneratePath();
-  
-  printf("Path %u:%f,%f,%f -> %u:%f,%f,%f\n",atoi(argv[4]),orig.x,orig.y,orig.z,atoi(argv[5]),dest.x,dest.y,dest.z);
+  printf("Path %f,%f,%f -> %f,%f,%f\n",benchPoints[0].x,benchPoints[0].y,benchPoints[0].z,benchPoints[benchPoints.size()-1].x,benchPoints[benchPoints.size()-1].y,benchPoints[benchPoints.size()-1].z);
   printf ("PathGenerator returned %u\n",result);
-  pathGen->PrintPath();*/
+  pathGen->PrintPath();
   
   std::string cmd;
   printf("pause\n");
