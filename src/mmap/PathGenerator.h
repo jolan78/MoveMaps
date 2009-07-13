@@ -18,7 +18,6 @@
 #define MANHATTAN_DIST 1
 //#define DIAGONAL_DIST 1
 
-
 using namespace G3D;
 
 struct PathNode {
@@ -30,191 +29,166 @@ struct PathNode {
   PathNode* parent;
 };
 
-
-
 namespace VMAP
-  { // FIXME : code style
-class PathGenerator {
- private:
-  Array<Vector3> Path;
-  Vector3 pOrig;
-  Vector3 pDest;
-  const MoveZoneContainer* pMoveZoneContainer;
-  
-  Array<PathNode*> openZones;
-  Array<PathNode*> closedZones;
-  Table<unsigned int,PathNode*> openMZTable;
-  Array<unsigned int> closedMZId;
-
-  unsigned int getFastDistance(Vector3 orig,Vector2 dest) { getFastDistance(orig.xy(),dest); }
-  
-  unsigned int getFastDistance(Vector2 orig,Vector3 dest) { getFastDistance(orig,dest.xy()); }
-  
-  unsigned int getFastDistance(Vector3 orig,Vector3 dest) { getFastDistance(orig.xy(),dest.xy()); }
-
-  unsigned int getFastDistance(Vector2 orig,Vector2 dest)
   {
-    #ifdef MANHATTAN_DIST
-      return (abs(orig.x-dest.y) + abs(orig.y-dest.y)) * STRAIGHT_COST;
-    #endif
+  class PathGenerator {
+  private:
+    Array<Vector3> Path;
+    Vector3 pOrig;
+    Vector3 pDest;
+    const MoveZoneContainer* pMoveZoneContainer;
     
-    #ifdef DIAGONAL_DIST
-    unsigned int diagonalSteps = min(abs(orig.x-dest.x), abs(orig.y-dest.y));
-    unsigned int straightSteps = (abs(orig.x-dest.x) + abs(orig.y-dest.y)) - 2 * diagonalSteps;
-    return diagonalSteps * DIAGONAL_COST + straightSteps * STRAIGHT_COST;
-    #endif
-  }
+    Array<PathNode*> openZones;
+    Array<PathNode*> closedZones;
+    Table<unsigned int,PathNode*> openMZTable;
+    Array<unsigned int> closedMZId;
 
- public:
-  PathGenerator(Vector3 orig,Vector3 dest,const MoveZoneContainer* MZContainer) {pOrig=orig,pDest=dest,pMoveZoneContainer=MZContainer; } // TODO: use a load / unload manager
-  
-  ~PathGenerator()
-    {
-    openZones.deleteAll();
-    closedZones.deleteAll();
-    }
-  
-  void PrintPath()
-    {
-    for (unsigned int i=0;i<Path.size();++i)
-      printf("%f,%f,%f\n",Path[i].x,Path[i].y,Path[i].z);
-    }
+    unsigned int getFastDistance(Vector3 orig,Vector2 dest) { getFastDistance(orig.xy(),dest); }
+    
+    unsigned int getFastDistance(Vector2 orig,Vector3 dest) { getFastDistance(orig,dest.xy()); }
+    
+    unsigned int getFastDistance(Vector3 orig,Vector3 dest) { getFastDistance(orig.xy(),dest.xy()); }
 
-  Array<Vector3>&
-  getPathArray()
+    unsigned int getFastDistance(Vector2 orig,Vector2 dest)
     {
-    return Path;
-    }
-  
-  Array<unsigned int>&
-  getVisitedCells()
-    {
-    return closedMZId;
-    }
-  
-  unsigned int
-  GeneratePath ()
-    {
-    MoveZone* startMZ;
-    MoveZone* destMZ;
-    if (!(startMZ=pMoveZoneContainer->getMoveZoneByCoords(pOrig)))
-      return ERR_ORIG_NOT_FOUND;
-    if (!(destMZ=pMoveZoneContainer->getMoveZoneByCoords(pDest)))
-      return ERR_DEST_NOT_FOUND;
-    PathNode* PN = new PathNode;
-    PN->moveZone=startMZ;
-    PN->position=pOrig.xy();
-    PN->distDone=0;
-    PN->distRemain=getFastDistance(pOrig,pDest);
-    PN->score=PN->distRemain;
-    PN->parent=NULL;
-    assert(PN->moveZone);
-    openZones.append(PN);
-    openMZTable.set(PN->moveZone->getIndex(),PN);
-    
-    
-    do {
-//printf("openZones: size%u\n",openZones.size());
-      PN = openZones.pop(); // shrink array, slower but safer, perhaps not necessary shrink now ?
-      assert(PN->moveZone);
-      closedMZId.push_back(PN->moveZone->getIndex());
-      closedZones.push_back(PN);
-//printf("poped\n");
+      #ifdef MANHATTAN_DIST
+        return (abs(orig.x-dest.y) + abs(orig.y-dest.y)) * STRAIGHT_COST;
+      #endif
       
-      if (PN->moveZone == destMZ)
-        {
-        /* we added the dest zone to the closed list,
-        thats when we consider we found the path instead of when we add it to the open list
-        if we use weighted path */
-        do {
-          // TODO : that's where we should stretch the path
-          Path.insert(0,Vector3(PN->position,PN->moveZone->getBounds().high().z));
-          PN=PN->parent;
-        } while(PN != NULL);
-        Path.append(pDest);
-        return PATH_FOUND;
-        }
-//printf("MZ %u\n", PN->moveZone->getIndex());
-     
-      Array<MovePortal*> PortalArray = PN->moveZone->getPortalArray();
-//printf("2\n");
-     
-      for (Array<MovePortal*>::Iterator p=PortalArray.begin(); p!=PortalArray.end(); ++p)
-        {
-// printf("Portal -> %u\n",((*p)->getDestinationID()));
-            
+      #ifdef DIAGONAL_DIST
+      unsigned int diagonalSteps = min(abs(orig.x-dest.x), abs(orig.y-dest.y));
+      unsigned int straightSteps = (abs(orig.x-dest.x) + abs(orig.y-dest.y)) - 2 * diagonalSteps;
+      return diagonalSteps * DIAGONAL_COST + straightSteps * STRAIGHT_COST;
+      #endif
+    }
 
-        if (!(*p)->isGridPortal() && !closedMZId.contains((*p)->getDestinationID()))
-          { // it's not in the closed list
-          Vector2 portalCenter=(*p)->getCenter2();
+  public:
+    PathGenerator(Vector3 orig,Vector3 dest,const MoveZoneContainer* MZContainer) {pOrig=orig,pDest=dest,pMoveZoneContainer=MZContainer; } // TODO: use a load / unload manager
 
-          PathNode* destPN;
-          if (openMZTable.get((*p)->getDestinationID(),destPN))
-            {
-// printf("4\n");
+    ~PathGenerator()
+      {
+      openZones.deleteAll();
+      closedZones.deleteAll();
+      }
 
+    void PrintPath()
+      {
+      for (unsigned int i=0;i<Path.size();++i)
+        printf("%f,%f,%f\n",Path[i].x,Path[i].y,Path[i].z);
+      }
 
-            assert(destPN->moveZone);
-            int distDone=PN->distDone + getFastDistance(PN->position,portalCenter);
-            if (distDone < destPN->distDone)
-              { // this node is better than the one in the open list, replace it
-              // TODO : lot of duplicated code here ...
-//printf("update\n");
+    Array<Vector3>&
+    getPathArray()
+      {
+      return Path;
+      }
+
+    Array<unsigned int>&
+    getVisitedCells()
+      {
+      return closedMZId;
+      }
+
+    unsigned int
+    GeneratePath ()
+      {
+      MoveZone* startMZ;
+      MoveZone* destMZ;
+      if (!(startMZ=pMoveZoneContainer->getMoveZoneByCoords(pOrig)))
+        return ERR_ORIG_NOT_FOUND;
+      if (!(destMZ=pMoveZoneContainer->getMoveZoneByCoords(pDest)))
+        return ERR_DEST_NOT_FOUND;
+      PathNode* PN = new PathNode;
+      PN->moveZone=startMZ;
+      PN->position=pOrig.xy();
+      PN->distDone=0;
+      PN->distRemain=getFastDistance(pOrig,pDest);
+      PN->score=PN->distRemain;
+      PN->parent=NULL;
+      assert(PN->moveZone);
+      openZones.append(PN);
+      openMZTable.set(PN->moveZone->getIndex(),PN);
+
+      do {
+        PN = openZones.pop(); // shrink array, slower but safer, perhaps not necessary shrink now ?
+        assert(PN->moveZone);
+        closedMZId.push_back(PN->moveZone->getIndex());
+        closedZones.push_back(PN);
+        
+        if (PN->moveZone == destMZ)
+          {
+          /* we added the dest zone to the closed list,
+          thats when we consider we found the path instead of when we add it to the open list
+          if we use weighted path */
+          do {
+            // TODO : that's where we should stretch the path
+            Path.insert(0,Vector3(PN->position,PN->moveZone->getBounds().high().z));
+            PN=PN->parent;
+          } while(PN != NULL);
+          Path.append(pDest);
+          return PATH_FOUND;
+          }
+
+        Array<MovePortal*> PortalArray = PN->moveZone->getPortalArray();
+
+        for (Array<MovePortal*>::Iterator p=PortalArray.begin(); p!=PortalArray.end(); ++p)
+          {
+          if (!(*p)->isGridPortal() && !closedMZId.contains((*p)->getDestinationID()))
+            { // it's not in the closed list
+            Vector2 portalCenter=(*p)->getCenter2();
+
+            PathNode* destPN;
+            if (openMZTable.get((*p)->getDestinationID(),destPN))
+              {
+              assert(destPN->moveZone);
+              int distDone=PN->distDone + getFastDistance(PN->position,portalCenter);
+              if (distDone < destPN->distDone)
+                { // this node is better than the one in the open list, replace it
+                // TODO : lot of duplicated code here ...
+                destPN->position=portalCenter;
+                destPN->distDone=PN->distDone + getFastDistance(PN->position,portalCenter);
+                destPN->distRemain=getFastDistance(portalCenter,pDest);
+                destPN->score=destPN->distDone + destPN->distRemain;
+                destPN->parent=PN;
+                openZones.fastRemove(openZones.findIndex(destPN));
+                unsigned int nodeIdx=openZones.size();
+                while (nodeIdx > 0)
+                  {
+                  nodeIdx--;
+                  if (destPN->score < openZones[nodeIdx]->score)
+                    break;
+                  }
+               openZones.insert(nodeIdx,destPN);
+                }
+              }
+            else
+              { // this node is not in the open list, add it
+              destPN = new PathNode;
+              destPN->moveZone=(*p)->getDestination();
+              assert(destPN->moveZone);
               destPN->position=portalCenter;
               destPN->distDone=PN->distDone + getFastDistance(PN->position,portalCenter);
               destPN->distRemain=getFastDistance(portalCenter,pDest);
               destPN->score=destPN->distDone + destPN->distRemain;
               destPN->parent=PN;
-//printf("rem\n");
-//printf("openZones: rem%u size%u\n",openZones.findIndex(destPN),openZones.size());
-              openZones.fastRemove(openZones.findIndex(destPN));
-              unsigned int nodeIdx=openZones.size();
+              int nodeIdx=openZones.size();
               while (nodeIdx > 0)
                 {
                 nodeIdx--;
                 if (destPN->score < openZones[nodeIdx]->score)
                   break;
                 }
-//printf("openZones insert at %d size%u\n",nodeIdx,openZones.size());
-             openZones.insert(nodeIdx,destPN);
-              }
-            }
-          else
-            { // this node is not in the open list, add it
-//printf("add\n");
-            destPN = new PathNode;
-            destPN->moveZone=(*p)->getDestination();
-            assert(destPN->moveZone);
-            destPN->position=portalCenter;
-            destPN->distDone=PN->distDone + getFastDistance(PN->position,portalCenter);
-            destPN->distRemain=getFastDistance(portalCenter,pDest);
-            destPN->score=destPN->distDone + destPN->distRemain;
-            destPN->parent=PN;
-            int nodeIdx=openZones.size();
-            while (nodeIdx > 0)
-              {
-              nodeIdx--;
-              if (destPN->score < openZones[nodeIdx]->score)
-                break;
-              }
-//printf("openZones insert at %d size%u\n",nodeIdx,openZones.size());
 
-            openZones.insert(nodeIdx,destPN);
-            openMZTable.set(destPN->moveZone->getIndex(),destPN);
-            
+              openZones.insert(nodeIdx,destPN);
+              openMZTable.set(destPN->moveZone->getIndex(),destPN);
+
+              }
             }
+          // TODO : else manage nearby grid load
           }
-        // TODO : else manage nearby grid load
-        }
-      
-    } while (openZones.size());
-    
-    
-    return PATH_NOT_FOUND;
-    }
-  
-  
-
-};
+      } while (openZones.size());
+      return PATH_NOT_FOUND;
+      }
+  };
 };
 #endif /* PATHGENERATOR_H */
