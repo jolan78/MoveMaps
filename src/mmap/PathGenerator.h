@@ -16,16 +16,17 @@
 
 // manhattan gives better result
 #define MANHATTAN_DIST 1
-//#define DIAGONAL_DIST 1
+#define DIAGONAL_DIST 2
 
 // slower but more accurate pathfinding
-// allows faster path stretching
-#define THREE_PTS_PER_PORTAL 1
+// useless when using withStreching()
+//#define THREE_PTS_PER_PORTAL
 
 using namespace G3D;
 
 struct PathNode {
   VMAP::MoveZone* moveZone;
+  VMAP::MovePortal* movePortal;
   Vector2 position;
   unsigned int score;
   unsigned int distDone;
@@ -40,6 +41,8 @@ namespace VMAP
     Array<Vector3> Path;
     Vector3 pOrig;
     Vector3 pDest;
+    unsigned int pDistCalc;
+    bool pPostStretch;
     const MoveZoneContainer* pMoveZoneContainer;
     
     Array<PathNode*> openZones;
@@ -55,19 +58,20 @@ namespace VMAP
 
     unsigned int getFastDistance(Vector2 orig,Vector2 dest)
     {
-      #ifdef MANHATTAN_DIST
+      if ( pDistCalc == MANHATTAN_DIST )
+        {
         return (abs(orig.x-dest.y) + abs(orig.y-dest.y)) * STRAIGHT_COST;
-      #endif
-      
-      #ifdef DIAGONAL_DIST
-      unsigned int diagonalSteps = min(abs(orig.x-dest.x), abs(orig.y-dest.y));
-      unsigned int straightSteps = (abs(orig.x-dest.x) + abs(orig.y-dest.y)) - 2 * diagonalSteps;
-      return diagonalSteps * DIAGONAL_COST + straightSteps * STRAIGHT_COST;
-      #endif
+        }
+      else
+        {
+        unsigned int diagonalSteps = min(abs(orig.x-dest.x), abs(orig.y-dest.y));
+        unsigned int straightSteps = (abs(orig.x-dest.x) + abs(orig.y-dest.y)) - 2 * diagonalSteps;
+        return diagonalSteps * DIAGONAL_COST + straightSteps * STRAIGHT_COST;
+        }
     }
 
   public:
-    PathGenerator(Vector3 orig,Vector3 dest,const MoveZoneContainer* MZContainer) {pOrig=orig,pDest=dest,pMoveZoneContainer=MZContainer; } // TODO: use a load / unload manager
+    PathGenerator(Vector3 orig,Vector3 dest,const MoveZoneContainer* MZContainer) {pOrig=orig,pDest=dest,pMoveZoneContainer=MZContainer,pDistCalc=MANHATTAN_DIST,pPostStretch=false ;} // TODO: use a load / unload manager
 
     ~PathGenerator()
       {
@@ -75,10 +79,25 @@ namespace VMAP
       closedZones.deleteAll();
       }
 
+    void setDistanceCalc(unsigned int dcalc) { pDistCalc=dcalc; }
+    void withStreching() { pPostStretch=true; }
+    
     void PrintPath()
       {
       for (unsigned int i=0;i<Path.size();++i)
         printf("%f,%f,%f\n",Path[i].x,Path[i].y,Path[i].z);
+      }
+
+    float getRealDistance()
+      {
+      float dist=0;
+      Vector2 prev=pOrig.xy();
+      for (unsigned int i=1;i<Path.size();++i)
+        {
+        dist+= (Path[i].xy() - prev).length();
+        prev=Path[i].xy();
+        }
+      return dist;
       }
 
     Array<Vector3>&
@@ -127,7 +146,44 @@ namespace VMAP
           do {
             // TODO : that's where we can stretch the path, or we can do it in movement generator
             Path.insert(0,Vector3(PN->position,PN->moveZone->getBounds().high().z));
-            PN=PN->parent;
+
+            if (pPostStretch)
+              {
+              bool passtru=false;
+              Vector2 from=PN->position;
+              do {
+                passtru=false;
+                PN=PN->parent;
+                if (PN != NULL && PN->parent!=NULL)
+                  {
+                  Vector2 to=PN->parent->position;
+                  unsigned int pdir=PN->movePortal->getDirection();
+                  
+                  if (pdir == EXTEND_E || pdir == EXTEND_W)
+                    {
+                    float y = from.y + (to.y - from.y) * abs( (PN->position.x - from.x) / (to.x - from.x) );
+                    if(y < PN->movePortal->getLow2().y )
+                      PN->position.y=PN->movePortal->getLow2().y;
+                    else if (y > PN->movePortal->getHigh2().y)
+                      PN->position.y=PN->movePortal->getHigh2().y;
+                    else
+                      passtru=true;
+                    }
+                  else
+                    {
+                    float x = from.x + (to.x - from.x) * abs( (PN->position.y - from.y) / (to.y - from.y) );
+                    if(x < PN->movePortal->getLow2().x)
+                      PN->position.x=PN->movePortal->getLow2().x;
+                    else if (x > PN->movePortal->getHigh2().x)
+                      PN->position.x=PN->movePortal->getHigh2().x;
+                    else
+                      passtru=true;
+                    }
+                  }
+              } while (passtru);
+              }
+            else
+              PN=PN->parent;
           } while(PN != NULL);
           Path.append(pDest);
           return PATH_FOUND;
@@ -169,6 +225,7 @@ namespace VMAP
                 { // this node is better than the one in the open list, replace it
                 // TODO : lot of duplicated code here ...
                 destPN->position=portalCenter;
+                destPN->movePortal=(*p);
                 destPN->distDone=PN->distDone + getFastDistance(PN->position,portalCenter);
                 destPN->distRemain=getFastDistance(portalCenter,pDest);
                 destPN->score=destPN->distDone + destPN->distRemain;
@@ -188,6 +245,7 @@ namespace VMAP
               { // this node is not in the open list, add it
               destPN = new PathNode;
               destPN->moveZone=(*p)->getDestination();
+              destPN->movePortal=(*p);
               assert(destPN->moveZone);
               destPN->position=portalCenter;
               destPN->distDone=PN->distDone + getFastDistance(PN->position,portalCenter);
