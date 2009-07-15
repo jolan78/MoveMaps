@@ -1099,6 +1099,7 @@ namespace VMAP
       printf("looking for path %f,%f,%f -> %f,%f,%f\n",orig.x,orig.y,orig.z,dest.x,dest.y,dest.z);
       
       PathGenerator* pathGen = new PathGenerator(orig,dest,iMZcontainer);
+      pathGen->withStreching();
       unsigned int result = pathGen->GeneratePath();
       
       if (result == ERR_ORIG_NOT_FOUND)
