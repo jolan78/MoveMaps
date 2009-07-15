@@ -1030,30 +1030,72 @@ namespace VMAP
         consolePrintf("syntax error");
         return;
         }
-      if (command.size()<argnb+1)
-        {
-        consolePrintf("syntax error");
-        return;
-        }
         
       std::string mapref=command[++argnb];
       const MoveZoneContainer* iMZcontainer;
       if (!iMoveZoneContainers.get(mapref,iMZcontainer))
         {
-        consolePrintf("map %s is not loaded",mapref.c_str());
+        consolePrintf("map '%s' is not loaded",mapref.c_str());
         return;
         }
-
-      // adding path by coords
-      if (command.size()<argnb + 6)
+      
+      if (command.size()<argnb+1)
         {
         consolePrintf("syntax error");
         return;
         }
       
-      Vector3 orig = Vector3(atof(command[argnb+1].c_str()), atof(command[argnb+2].c_str()), atof(command[argnb+3].c_str()));
-      Vector3 dest = Vector3(atof(command[argnb+4].c_str()), atof(command[argnb+5].c_str()), atof(command[argnb+6].c_str()));
+      Vector3 orig,dest;
       
+      std::string iszone=command[argnb+1];
+      if(iszone == "zones")
+        {
+        // adding path by zone id
+        argnb++;
+        if (command.size()<argnb + 2)
+          {
+          consolePrintf("syntax error");
+          return;
+          }
+        
+        unsigned int origzoneid = atoi(command[++argnb].c_str());
+        unsigned int destzoneid = atoi(command[++argnb].c_str());
+        
+        Array<MoveZone*> iMoveZoneArray=iMZcontainer->getMoveZoneArray();
+        
+        if (origzoneid<0 && origzoneid>=iMoveZoneArray.size())
+          {
+          consolePrintf("error : non-existent zone id %u",origzoneid);
+          return;
+          }
+        else if (destzoneid<0 && destzoneid>=iMoveZoneArray.size())
+          {
+          consolePrintf("error : non-existent zone id %u",origzoneid);
+          return;
+          }
+        else
+          {
+          const MoveZone* iMoveZone=iMoveZoneArray[origzoneid];
+          const AABox& ob = iMoveZone->getBounds();
+          orig = Vector3((ob.low().x+ob.high().x)/2, (ob.low().y+ob.high().y)/2, (ob.low().z+ob.high().z)/2);
+
+          iMoveZone=iMoveZoneArray[destzoneid];
+          const AABox& db = iMoveZone->getBounds();
+          dest = Vector3((db.low().x+db.high().x)/2, (db.low().y+db.high().y)/2, (db.low().z+db.high().z)/2);
+          }
+        }
+      else
+        {
+        // adding path by coords
+        if (command.size()<argnb + 6)
+          {
+          consolePrintf("syntax error");
+          return;
+          }
+        
+        orig = Vector3(atof(command[argnb+1].c_str()), atof(command[argnb+2].c_str()), atof(command[argnb+3].c_str()));
+        dest = Vector3(atof(command[argnb+4].c_str()), atof(command[argnb+5].c_str()), atof(command[argnb+6].c_str()));
+        }
       printf("looking for path %f,%f,%f -> %f,%f,%f\n",orig.x,orig.y,orig.z,dest.x,dest.y,dest.z);
       
       PathGenerator* pathGen = new PathGenerator(orig,dest,iMZcontainer);
@@ -1072,13 +1114,13 @@ namespace VMAP
       else if (result == PATH_FOUND)
         {
         char name[14];
-        Array<std::string> gridCoords = stringSplit(command[2],':');
+        Array<std::string> gridCoords = stringSplit(mapref,':');
         if (gridCoords.size()<0)
           {
           consolePrintf("syntax error");
           return;
           }
-        sprintf(name,"2_path_%d-%d",gridCoords[0].c_str(),gridCoords[1].c_str());
+        sprintf(name,"2_path_%s-%s",gridCoords[0].c_str(),gridCoords[1].c_str());
         // Add empty path array
         Array<Vector3> gPathArray;
         Array<Vector3> iPath = pathGen->getPathArray();
@@ -1086,9 +1128,9 @@ namespace VMAP
         for (unsigned int pathIdx=0; pathIdx < iPath.size(); ++pathIdx)
           {
           if(gPathArray.size() > 0)
-            gPathArray.push_back (iPath[pathIdx]);
+            gPathArray.push_back (Vector3(iPath[pathIdx].x,iPath[pathIdx].z,iPath[pathIdx].y));
           // for the next line
-          gPathArray.push_back (iPath[pathIdx]);
+          gPathArray.push_back (Vector3(iPath[pathIdx].x,iPath[pathIdx].z,iPath[pathIdx].y));
           }
         gPathArray.popDiscard();
         
