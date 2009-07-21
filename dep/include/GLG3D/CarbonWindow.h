@@ -105,7 +105,7 @@ private:
 	
 	CarbonWindow& operator=(const CarbonWindow& other);
 
-	unsigned char CarbonWindow::makeKeyEvent(EventRef, GEvent&);
+	unsigned char makeKeyEvent(EventRef, GEvent&);
 	bool makeMouseEvent(OpaqueEventRef*, G3D::GEvent&);
 
 public:

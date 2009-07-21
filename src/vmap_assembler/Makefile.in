@@ -122,6 +122,7 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
+WINOW_MANAGER_LIBS = @WINOW_MANAGER_LIBS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -180,8 +181,9 @@ vmap_assembler_CPPFLAGS = \
 vmap_assembler_SOURCES = \
 main.cpp
 
-vmap_assembler_LDADD = $(top_builddir)/src/vmap2/libvmap2.a -lG3D -lzip -lz -lX11
+vmap_assembler_LDADD = $(top_builddir)/src/vmap2/libvmap2.a @DISPLAY_MANAGER_LIBS@ -lG3D -lzip -lz @WINOW_MANAGER_LIBS@
 vmap_assembler_LDFLAGS = \
+@DISPLAY_MANAGER_LDFLAGS@ \
 -L$(top_builddir)/dep/src/zip \
 -L$(top_builddir)/dep/src/G3D
 

@@ -23,13 +23,17 @@ esac],[debug=false])
 case $host_os in 
     darwin*)
         DISPLAY_MANAGER_LDFLAGS="-framework Cocoa -framework Carbon -framework OpenGL -framework GLUT -framework AGL";
-        DISPLAY_MANAGER_LIBS="";;
+        DISPLAY_MANAGER_LIBS="";
+        WINOW_MANAGER_LIBS="";;
     *)
 	    DISPLAY_MANAGER_LDFLAGS="";
-	    DISPLAY_MANAGER_LIBS="-lSDL -lSDLmain";;
+	    DISPLAY_MANAGER_LIBS="-lSDL -lSDLmain";
+	    WINOW_MANAGER_LIBS="-lX11";;
+
 esac
 AC_SUBST(DISPLAY_MANAGER_LDFLAGS)
 AC_SUBST(DISPLAY_MANAGER_LIBS)
+AC_SUBST(WINOW_MANAGER_LIBS)
 
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 

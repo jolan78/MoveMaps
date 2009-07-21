@@ -42,7 +42,7 @@ namespace VMAP
     int ix;
     int iy;
   private:
-    void ModelContainerView::addGrid ( int iMap, int x, int y );
+    void addGrid ( int iMap, int x, int y );
     void addMoveMapToDisplay ( int mapId, int x, int y );
     
     void fillVertexAndIndexArraysWithMoveMapBoxContainer (Array<Vector3>& vArray, Array<int>& iArray, MoveMapContainer* iMoveMapBoxContainer);
