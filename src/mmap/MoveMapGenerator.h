@@ -29,7 +29,6 @@ namespace VMAP
     void fillMCList (Array<ModelContainer*>& McList, int mapId, int x, int y, Vector3& low, Vector3& high, Vector3& oriLow, Vector3& oriHigh);
 
     void fillNeighborPositionsInLayer (Vector3 pSourcePos, MoveLayer* pSourceMoveLayer, MoveLayer* pDestMoveLayer, MoveLayerConnectionPointsContainer& pConnPointsCont);
-    void calculateMoveZones (const Array<MoveLayer*>& pMoveLayerArray, MoveMapContainer* pMoveMapContainer);
     MoveMapContainer* calculateMoveLayerConnections (const Array<MoveLayer*>& pMoveLayerArray);
     bool calculate (VectorMoveMap* pVectorMoveMap, const Vector3& pInnerLow, const Vector3& pInnerHigh, const Vector3& pLow, const Vector3& pHigh, const Vector3& oriLow, const Vector3& oriHigh, AABSPTree<Triangle>* pResultTree, unsigned int MapId, unsigned int x, unsigned int y, bool GenCoords);
     bool generateMoveMaps (int mapId, int x, int y, bool GenCoords);

@@ -1,7 +1,6 @@
 #ifndef _MOVEZONE_H_
 #define _MOVEZONE_H_
 
-//#include "AABSPTree.h"
 #include "RStarTree.h"
 
 #include <G3D/AABox.h>
@@ -9,7 +8,7 @@
 
 #include "MoveLayer.h"
 
-#include "PositionControlArray.h"
+//#include "PositionControlArray.h"
 #include "MoveMapBoxContainer.h"
 #include "MoveMapBox.h"
 
@@ -19,11 +18,8 @@
 #define EXTEND_W 3
 
 #define FLOAT_HEIGHT_CANT_REACH 999999.0f
-//#define MAX_ZONES_PER_LAYER 500000 // enough to handle 1x1 zones for a 600x600 layer
 
 using namespace G3D;
-
-
 
 namespace VMAP
 {
@@ -42,7 +38,6 @@ namespace VMAP
   class MovePortal
   {
   private:
-    //unsigned int DestLayerID;
     unsigned int DestZoneID;
     MoveZone* DestZone;
     Vector2 center;
@@ -159,16 +154,6 @@ namespace VMAP
     float
     getLocalHeightAt(float x, float y)
       {
-      #ifdef CHECK_POINTINBOUNDS
-      AABox BoxBounds=zMoveMapBox->getBounds ();     
-      if(x <BoxBounds.low().x || x > BoxBounds.high().x ||
-               y <BoxBounds.low().z || y > BoxBounds.high().z )
-        {
-        printf("MZ %d MoveMapBox does not contain %f,%f (%f,%f) (%f,%f)\n",getIndex(),x,y,x - BoxBounds.low().x, y - BoxBounds.low().y,x-BoxBounds.low().x,y-BoxBounds.low().y);
-        assert(false);
-        }
-      #endif
-
       unsigned int val = zMoveMapBox->get ((float) x, (float) y);
       if (val == MOVEMAP_VALUE_CANT_REACH)
         return FLOAT_HEIGHT_CANT_REACH;
@@ -179,20 +164,9 @@ namespace VMAP
     inline unsigned int
     getLocalCompressedHeightAt(float x, float y)
       {
-      #ifdef CHECK_POINTINBOUNDS
-      AABox BoxBounds=zMoveMapBox->getBounds ();     
-      if(x <BoxBounds.low().x || x > BoxBounds.high().x ||
-               y <BoxBounds.low().z || y > BoxBounds.high().z )
-        {
-        printf("MZ %d MoveMapBox does not contain %f,%f (%f,%f) (%f,%f)\n",getIndex(),x,y,x - BoxBounds.low().x, y - BoxBounds.low().y,x-BoxBounds.low().x,y-BoxBounds.low().y);
-        assert(false);
-        }
-      #endif
-
       return zMoveMapBox->get ((float) x, (float) y);
       }
 
-    
     float
     getGlobalHeightAt(float x, float y)
       {
@@ -273,7 +247,6 @@ namespace VMAP
     Array<MoveZone*>
     getMoveZoneArray() const
     {
-      //return MZ_Tree->getLeavesArray();
       return pMoveZonesArray;
     }
 
@@ -288,7 +261,7 @@ namespace VMAP
     {
       return pMoveZonesArray[i];
     }
-    //const Table<unsigned int*, float>*
+
     const Array<gridPortal>*
     getGridPortals(unsigned int direction)
       {
@@ -299,11 +272,8 @@ namespace VMAP
   };
 
   //========================================================
-
-  //size_t hashCode (const MoveZone& pMZ);
-  //bool operator==(const MoveZone& pMZ1, const MoveZone& pMZ2);
+  // FIXME : originally for aabsptree ; is this still needed ?
   size_t hashCode (const MoveZone* pMZ);
-  //void getBounds (const MoveZone& pMZ, G3D::AABox& pAABox);
   void getBounds (const MoveZone* pMZ, G3D::AABox& pAABox);
 }
 

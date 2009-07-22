@@ -194,9 +194,6 @@ namespace VMAP
         offset += vArray.size ();
         //break;
       }
-    
-    printf("Load %d ModelContainer vertices to %s\n",iGlobArray.size(),pName.c_str());
-
     iTriVarTable.set (pName, new VAR (iGlobArray, iVARAreaRef));
     iTriIndexTable.set (pName, iIndexArray);
   }
@@ -305,7 +302,6 @@ namespace VMAP
             if (iShowPortals)
               {
               
-                //rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
                 rd->setColor (Color3(0, 255, 0));
 
                 rd->beginIndexedPrimitives ();
@@ -319,7 +315,6 @@ namespace VMAP
             if (iShowPortals)
               {
               
-                //rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
                 rd->setColor (Color3(255, 0, 0));
 
                 rd->beginIndexedPrimitives ();
@@ -333,7 +328,6 @@ namespace VMAP
             if (iShowPath)
               {
               
-                //rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
                 rd->setColor (Color3(0, 0, 255));
 
                 rd->beginIndexedPrimitives ();
@@ -485,10 +479,6 @@ namespace VMAP
     
     char name[30];
     sprintf(name,"1_moveMaps2_%d-%d",x,y);
-    /*name+="_";
-    name+=x+0x30;
-    name+="-";
-    name+=y+0x30;*/
     printf("Load %d MoveMaps Points vertices to %s\n",vArray.size(),name);
 
     iTriVarTable.set (name, new VAR (vArray, iVARAreaRef));
@@ -498,11 +488,6 @@ namespace VMAP
     Array<int> ibArray;
     Array<Vector3> vbArray;
     sprintf(name,"5_boundingBoxes_%d-%d",x,y);
-    /*name = "boundingBoxes";
-    name+="_";
-    name+=x+0x30;
-    name+="-";
-    name+=y+0x30;*/
     
     count = 0;
     
@@ -587,7 +572,6 @@ namespace VMAP
         count += 8;
       }
     
-    printf("Load %d MapBox vertices\n",vbArray.size());
     iTriVarTable.set (name, new VAR (vbArray, iVARAreaRef));
     iTriIndexTable.set (name, ibArray);
     char maprefbuffer[6];
@@ -595,8 +579,6 @@ namespace VMAP
     std::string mapref=maprefbuffer;
     printf ("loading map %s\n",mapref.c_str());
     iMoveZoneContainers.set(mapref,moveMapBoxContainer->getMoveZoneContainer());
-    //const Vector3 basePos = iMoveZoneContainer->getBasePosition ();
-    //printf("ZoneContainer at %f,%f,%f\n",basePos.x,basePos.z,basePos.y);
     Array<MoveZone*> iMoveZoneArray=iMoveZoneContainers[mapref]->getMoveZoneArray();
     for (unsigned int j = 0; j< iMoveZoneArray.size(); j++)
       {
@@ -604,58 +586,52 @@ namespace VMAP
       const AABox& b = iMoveZone->getBounds();
       AABox ab ;
       ab.set(Vector3(b.low().x, b.low().z, b.low().y), Vector3(b.high().x, b.high().z, b.high().y));
-      //ab = ab + Vector3 (basePos.x,basePos.y,basePos.z);// FIXME : hack ?
-      //DEBUG: printf("Zone at %f,%f %f\n",ab.low().x,ab.low().z,ab.low().y);
-      
-      if (j==94)
-        setViewPosition (Vector3((b.low().x+b.high().x)/2, (b.low().z+b.high().z)/2, (b.low().y+b.high().y)/2));
       
       gZoneArray.push_back(Box(ab));
       const Array<MovePortal*> portals = iMoveZone->getPortalArray();
-      //DEBUG: printf("%d portals\n",portals.size());
-        for (unsigned int p = 0; p< portals.size(); ++p)
-          {
-          Vector3 mylow=Vector3(portals[p]->getLow2(),iMoveZone->getBounds().high().z);
-          Vector3 myhigh=Vector3(portals[p]->getHigh2(),iMoveZone->getBounds().high().z);
-          if (portals[p]->getDirection() == EXTEND_N)
-              {
-              mylow.x-=0.3f;
-              myhigh.x+=0.3f;
-              mylow.y+=0.1f;
-              myhigh.y+=0.1f;
-              }
-          else if (portals[p]->getDirection() == EXTEND_S)
-              {
-              mylow.x-=0.3f;
-              myhigh.x+=0.3f;
-              mylow.y-=0.1f;
-              myhigh.y-=0.1f;
-              }
-          else if (portals[p]->getDirection() == EXTEND_E)
-              {
-              mylow.y-=0.3f;
-              myhigh.y+=0.3f;
-              mylow.x+=0.1f;
-              myhigh.x+=0.1f;
-              }
-          else if (portals[p]->getDirection() == EXTEND_W)
-              {
-              mylow.y-=0.3f;
-              myhigh.y+=0.3f;
-              mylow.x-=0.1f;
-              myhigh.x-=0.1f;
-              }
-          if (portals[p]->getDestinationID() == INT_MAX)
-              {
-              gBadPortalArray.push_back(Vector3(mylow.x,mylow.z,mylow.y));
-              gBadPortalArray.push_back(Vector3(myhigh.x,myhigh.z,myhigh.y));
-              }
-          else
-              {
-              gPortalArray.push_back(Vector3(mylow.x,mylow.z,mylow.y));
-              gPortalArray.push_back(Vector3(myhigh.x,myhigh.z,myhigh.y));
-              }
-          }
+      for (unsigned int p = 0; p< portals.size(); ++p)
+        {
+        Vector3 mylow=Vector3(portals[p]->getLow2(),iMoveZone->getBounds().high().z);
+        Vector3 myhigh=Vector3(portals[p]->getHigh2(),iMoveZone->getBounds().high().z);
+        if (portals[p]->getDirection() == EXTEND_N)
+            {
+            mylow.x-=0.3f;
+            myhigh.x+=0.3f;
+            mylow.y+=0.1f;
+            myhigh.y+=0.1f;
+            }
+        else if (portals[p]->getDirection() == EXTEND_S)
+            {
+            mylow.x-=0.3f;
+            myhigh.x+=0.3f;
+            mylow.y-=0.1f;
+            myhigh.y-=0.1f;
+            }
+        else if (portals[p]->getDirection() == EXTEND_E)
+            {
+            mylow.y-=0.3f;
+            myhigh.y+=0.3f;
+            mylow.x+=0.1f;
+            myhigh.x+=0.1f;
+            }
+        else if (portals[p]->getDirection() == EXTEND_W)
+            {
+            mylow.y-=0.3f;
+            myhigh.y+=0.3f;
+            mylow.x-=0.1f;
+            myhigh.x-=0.1f;
+            }
+        if (portals[p]->getDestinationID() == INT_MAX)
+            {
+            gBadPortalArray.push_back(Vector3(mylow.x,mylow.z,mylow.y));
+            gBadPortalArray.push_back(Vector3(myhigh.x,myhigh.z,myhigh.y));
+            }
+        else
+            {
+            gPortalArray.push_back(Vector3(mylow.x,mylow.z,mylow.y));
+            gPortalArray.push_back(Vector3(myhigh.x,myhigh.z,myhigh.y));
+            }
+        }
       }
     printf("added %i zones \n",gZoneArray.size());
     
@@ -664,11 +640,6 @@ namespace VMAP
     Array<Vector3> vzArray;
 
     sprintf(name,"4_zones_%d-%d",x,y);
-    /*name = "zones";
-    name+="_";
-    name+=x+0x30;
-    name+="-";
-    name+=y+0x30;*/
 
     count = 0;
     
@@ -762,12 +733,6 @@ namespace VMAP
     Array<Vector3> vpArray;
     
     sprintf(name,"2_portals_%d-%d",x,y);
-/*
-    name = "portals";
-    name+="_";
-    name+=x+0x30;
-    name+="-";
-    name+=y+0x30;*/
 
     count = 0;
     
@@ -826,12 +791,6 @@ namespace VMAP
 
 
     sprintf(name,"3_badportals_%d-%d",x,y);
-
-    /*name = "badportals";
-    name+="_";
-    name+=x+0x30;
-    name+="-";
-    name+=y+0x30;*/
 
     count = 0;
     
@@ -1151,7 +1110,7 @@ namespace VMAP
         }
       else if (result == PATH_NOT_FOUND)
         {
-        consolePrintf("path not found");
+        consolePrintf("path not found ; adding visited zones instead");
         Array<unsigned int> visitedMZ = pathGen->getVisitedCells();
         
         printf("%d visited cells, first:%u\n",visitedMZ.size(),visitedMZ[1]);
@@ -1358,7 +1317,6 @@ namespace VMAP
           }
         std::string mapref=command[2];
         unsigned int zoneid=atoi(command[3].c_str());
-        //iMoveZoneContainer = moveMapBoxContainer.getMoveZoneContainer();
         printf("go zone %s %u\n",mapref.c_str(),zoneid);
         const MoveZoneContainer* iMZcontainer;
         if (!iMoveZoneContainers.get(mapref,iMZcontainer))
@@ -1372,8 +1330,6 @@ namespace VMAP
           {
           const MoveZone* iMoveZone=iMoveZoneArray[zoneid];
           const AABox& b = iMoveZone->getBounds();
-          //setViewPosition (Vector3((b.low().x+b.high().x)/2, (b.low().z+b.high().z)/2, (b.low().y+b.high().y)/2));
-          //rd->setProjectionAndCameraMatrix (defaultCamera);
           defaultController->setPosition(Vector3((b.low().x+b.high().x)/2, b.high().z + 20, (b.low().y+b.high().y)/2));
           defaultController->lookAt(Vector3((b.low().x+b.high().x)/2, b.high().z, (b.low().y+b.high().y)/2));
           consolePrintf("changed view to zone id %u",iMoveZone->getIndex());

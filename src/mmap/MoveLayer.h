@@ -294,15 +294,15 @@ namespace VMAP
     inline void
     RemoveVal (MoveLayer* pMoveLayer)
     {
-      // if (iConnectedLayer.size () > 0) iConnectedLayer is never set ... TODO : undo change, not used
+      if (iConnectedLayer.size() > 0)
         {
+        // is this function usefull ? :
+        assert(false);
           for (Table<Vector3, MoveLayer*>::Iterator itr = iAccessToDifferentLayer.begin (); itr != iAccessToDifferentLayer.end ();)
             {
               if (itr->value == pMoveLayer)
                 {
                   Table<Vector3, MoveLayer*>::Iterator itr2 = itr;
-                  /*if (itr->key.x==15100.000000 && itr->key.z==14988.000000)
-                    printf("DBG RemoveVal : remove ML to %d\n",pMoveLayer);*/
                   ++itr;
                   iAccessToDifferentLayer.remove (itr2->key);
                 }

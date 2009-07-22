@@ -84,6 +84,7 @@ namespace VMAP
     
     void PrintPath()
       {
+      printf("Opened %u, closed %u zones\n",openMZTable.size(),closedMZId.size());
       for (unsigned int i=0;i<Path.size();++i)
         printf("%f,%f,%f\n",Path[i].x,Path[i].y,Path[i].z);
       }

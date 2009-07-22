@@ -203,7 +203,6 @@ namespace VMAP
     unsigned int iNTreeNodes;
     MoveMapConnectionManager* iMoveMapConnectionManager;
     MoveZoneContainer* iMoveZoneContainer;
-    //unsigned int iNMoveZoneContainer; == iNMoveMapBoxes
     float iGranularity;
     AABox iBounds;
     Vector3 iPosition;
@@ -251,13 +250,6 @@ namespace VMAP
     MoveMapContainer ();
     MoveMapContainer (AABSPTree<MoveMapBox*>* pBoxTree, Table<MoveMapBox*, unsigned short>& pBoxPositionsTable);
     ~MoveMapContainer ();
-
-    // needed by MoveZones
-    MoveMapConnectionManager*
-    getMoveMapConnectionManager()
-    {
-      return iMoveMapConnectionManager;
-    }
 
     void fillMoveMapConnectionManagerArray (const MoveLayerConnectionPointsContainer& pMoveLayerConnectionPointsContainer, const Table<MoveLayer*, MoveMapBox*>& pLayerMapBoxTable, const Table<MoveMapBox*, unsigned short>& pBoxPositionsTable);
 

@@ -32,7 +32,8 @@ main (int argc, char** argv)
     }
   time_t begin;
   time_t end;
-  
+  std::string cmd;
+
   Config conf;
   conf.SetSource ("mmap.conf");
   
@@ -48,6 +49,7 @@ main (int argc, char** argv)
   printf("preparing\n");
   
   Array<Vector3> benchPoints;
+  Array<Vector3> goodBenchPoints;
   for (unsigned int zone=0;zone<MZcontainer->getNZones();zone++)
     benchPoints.push_back(MZcontainer->getZone(zone)->getBounds().center());
   /*VMAP::MoveZone* startMZ = MZcontainer->getZone(atoi(argv[4]));
@@ -64,25 +66,57 @@ main (int argc, char** argv)
   VMAP::PathGenerator* pathGen;
   unsigned int result;
 
+  printf("keeping good points\n");
+
+  for (int dest=benchPoints.size()-1;dest>0;--dest)
+    {
+    int orig=benchPoints.size()-dest;
+    pathGen = new VMAP::PathGenerator(benchPoints[orig],benchPoints[dest],MZcontainer);
+    result = pathGen->GeneratePath();
+    
+    if (result != PATH_FOUND)
+      {
+      delete pathGen;
+      VMAP::PathGenerator* pathGen = new VMAP::PathGenerator(benchPoints[dest],benchPoints[orig],MZcontainer);
+      result = pathGen->GeneratePath();
+      if (result == PATH_FOUND)
+        {
+        printf("backward path works !\n");
+        }
+      /*else
+        goodBenchPoints.push_back(benchPoints[orig]);*/
+      n++;
+      
+      failedPaths++;
+      }
+    else
+      goodBenchPoints.push_back(benchPoints[orig]);
+
+    delete pathGen;
+    }
+
+
+
   printf("benching without stretching\n");
   n=0;
   failedPaths=0;
 
   time(&begin);
-  for (int dest=benchPoints.size()-1;dest>0;--dest)
+  for (int dest=goodBenchPoints.size()-1;dest>0;--dest)
     {
-    int orig=benchPoints.size()-dest;
-    //for (int orig=0;orig<benchPoints.size();++orig)
+    int orig=goodBenchPoints.size()-dest;
+    //for (int orig=0;orig<goodBenchPoints.size();++orig)
       {
-      pathGen = new VMAP::PathGenerator(benchPoints[orig],benchPoints[dest],MZcontainer);
+      pathGen = new VMAP::PathGenerator(goodBenchPoints[orig],goodBenchPoints[dest],MZcontainer);
       result = pathGen->GeneratePath();
       n++;
       
       if (result != PATH_FOUND)
         {
- /*       delete pathGen;
-        printf("path failed(%u) (%f,%f,%f) -> %f,%f,%f\n",result,benchPoints[orig].x,benchPoints[orig].y,benchPoints[orig].z,benchPoints[dest].x,benchPoints[dest].y,benchPoints[dest].z);
-        VMAP::PathGenerator* pathGen = new VMAP::PathGenerator(benchPoints[dest],benchPoints[orig],MZcontainer);
+        printf("path failed(%u) (%f,%f,%f) -> %f,%f,%f\n",result,goodBenchPoints[orig].x,goodBenchPoints[orig].y,goodBenchPoints[orig].z,goodBenchPoints[dest].x,goodBenchPoints[dest].y,goodBenchPoints[dest].z);
+
+        /*delete pathGen;
+        VMAP::PathGenerator* pathGen = new VMAP::PathGenerator(goodBenchPoints[dest],goodBenchPoints[orig],MZcontainer);
         result = pathGen->GeneratePath();
         if (result == PATH_FOUND)
           {
@@ -95,19 +129,20 @@ main (int argc, char** argv)
         
         failedPaths++;
         }
+
       
       delete pathGen;
 
       
       
-      if(!(n%500))
+      /*if(!(n%500))
         {
         time(&end);
 
         printf("##%u paths (%u failed) in %u secs. : %f path/s\n",n,failedPaths,(end-begin),(float)n / (float)(end-begin));
         if (n>maxPath)
           return 0;
-        }
+        }*/
       }
     }
   time(&end);
@@ -118,21 +153,22 @@ main (int argc, char** argv)
   n=0;
   failedPaths=0;
   time(&begin);
-  for (int dest=benchPoints.size()-1;dest>0;--dest)
+  for (int dest=goodBenchPoints.size()-1;dest>0;--dest)
     {
-    int orig=benchPoints.size()-dest;
-    //for (int orig=0;orig<benchPoints.size();++orig)
+    int orig=goodBenchPoints.size()-dest;
+    //for (int orig=0;orig<goodBenchPoints.size();++orig)
       {
-      pathGen = new VMAP::PathGenerator(benchPoints[orig],benchPoints[dest],MZcontainer);
+      pathGen = new VMAP::PathGenerator(goodBenchPoints[orig],goodBenchPoints[dest],MZcontainer);
       pathGen->withStreching();
       result = pathGen->GeneratePath();
       n++;
       
       if (result != PATH_FOUND)
         {
+        printf("path failed(%u) (%f,%f,%f) -> %f,%f,%f\n",result,goodBenchPoints[orig].x,goodBenchPoints[orig].y,goodBenchPoints[orig].z,goodBenchPoints[dest].x,goodBenchPoints[dest].y,goodBenchPoints[dest].z);
+
  /*       delete pathGen;
-        printf("path failed(%u) (%f,%f,%f) -> %f,%f,%f\n",result,benchPoints[orig].x,benchPoints[orig].y,benchPoints[orig].z,benchPoints[dest].x,benchPoints[dest].y,benchPoints[dest].z);
-        VMAP::PathGenerator* pathGen = new VMAP::PathGenerator(benchPoints[dest],benchPoints[orig],MZcontainer);
+        VMAP::PathGenerator* pathGen = new VMAP::PathGenerator(goodBenchPoints[dest],goodBenchPoints[orig],MZcontainer);
         result = pathGen->GeneratePath();
         if (result == PATH_FOUND)
           {
@@ -150,20 +186,23 @@ main (int argc, char** argv)
 
       
       
-      if(!(n%500))
+      /*if(!(n%500))
         {
         time(&end);
 
         printf("##%u paths (%u failed) in %u secs. : %f path/s\n",n,failedPaths,(end-begin),(float)n / (float)(end-begin));
         if (n>maxPath)
           return 0;
-        }
+        }*/
       }
     }
   time(&end);
 
   printf("done : %u paths (%u failed) in %u secs. : %f path/s\n",n,failedPaths,(end-begin),(float)n / (float)(end-begin));
   
+  printf("pause\n");
+  std::cin >>  cmd;
+
 
   time(&begin);
   printf("benchmark of R*Tree lookups :\n");
@@ -190,7 +229,6 @@ main (int argc, char** argv)
   printf ("PathGenerator returned %u\n",result);
   pathGen->PrintPath();
   
-  std::string cmd;
   printf("pause\n");
   std::cin >>  cmd;
 

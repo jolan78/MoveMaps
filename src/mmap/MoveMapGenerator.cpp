@@ -52,68 +52,6 @@ namespace VMAP
   }
 
   //================================================
-#if 0
-  // Calculate the move map zones and insert them into the AABSPTree
-  // balance the tree and fill the static MoveZoneContainer with the tree
-
-  void
-  MoveMapGenerator::calculateMoveZones (const Array<MoveLayer*>& pMoveLayerArray,MoveMapContainer* pMoveMapContainer)
-  {
-    debugAssert (pMoveLayerArray.size () > 0);
-
-    //AABSPTree<MoveZone*> *tree;
-    //Table<MoveLayer*, MoveMapBox*> layerBoxMapping;
-    //MoveLayerConnectionPointsContainer moveLayerConnectionPointsContainer;
-
-    //tree = new AABSPTree<MoveZone*>();
-    for (int i = 0; i < pMoveLayerArray.size (); ++i)
-      {
-        MoveLayer* currentLayer = pMoveLayerArray[i];
-        MoveZoneContainer currentZoneContainer=MoveZoneContainer(currentLayer);
-        
-        
-        
-        /*MoveMapBox* currentMoveMapBox = new MoveMapBox (currentLayer);
-        layerBoxMapping.set (currentLayer, currentMoveMapBox);
-
-        Array<Vector3> differenLayerPos;
-        currentLayer->getAccessToDifferentLayer (differenLayerPos);
-        for (int j = 0; j < differenLayerPos.size (); ++j)
-          {
-            MoveLayer* connectionLayer = currentLayer->getConnectionLayer (differenLayerPos[j]);
-            if (connectionLayer && connectionLayer->size () > 0)
-              {
-                AABox b;
-                connectionLayer->getBounds (b);
-                if (b.low () != b.high ())
-                  {
-                    // source and dest layer are swaped
-                    fillNeighborPositionsInLayer (differenLayerPos[j], connectionLayer, currentLayer, moveLayerConnectionPointsContainer);
-                  }
-                else
-                  {
-                    int xxxxx = 0;
-                  }
-              }
-            else
-              {
-                int xxxxx = 0;
-              }
-          }*/
-
-        //tree->insert (currentZoneContainer);
-        pMoveMapContainer->setMoveZonesContainer(currentZoneContainer,i);
-      }
-   /* tree->balance ();
-    Table<MoveMapBox*, unsigned short> boxPositionsTable;
-    MoveMapContainer* moveMapContainer = new MoveMapContainer (tree, boxPositionsTable);
-    moveMapContainer->fillMoveMapConnectionManagerArray (moveLayerConnectionPointsContainer, layerBoxMapping, boxPositionsTable);
-    delete tree;
-    return (moveMapContainer);*/
-    //return NULL;
-  }
-#endif
-  //================================================
 
   // Calculate the move map boxes and insert them into the AABSPTree
   // balance the tree and fill the static MoveMapContainer with the tree
@@ -309,22 +247,15 @@ namespace VMAP
       return false;
 
     MoveMapContainer* moveMapContainer = calculateMoveLayerConnections (calcHelper.iMoveLayers);
-  time_t sec1;
-  time (&sec1);
-
-    //calculateMoveZones(calcHelper.iMoveLayers /*moveMapContainer <- to get conexions with getVectorMoveLayerConnectionPointsTable ?? */, moveMapContainer);
-   // MoveZoneContainer MZContainer=MoveZoneContainer(calcHelper.iMoveLayers);
-/*    printf("calcHelper.iBounds : %f,%f %f,%f\n",calcHelper.iBounds.low().x,calcHelper.iBounds.low().z,calcHelper.iBounds.high().x,calcHelper.iBounds.high().z);
-    printf("calcHelper.iLow : %f,%f\n",calcHelper.iLow.x,calcHelper.iLow.z);
-    printf("calcHelper.iHigh : %f,%f\n",calcHelper.iHigh.x,calcHelper.iHigh.z);
-    printf("calcHelper.iInnerLow : %f,%f\n",calcHelper.iInnerLow.x,calcHelper.iInnerLow.z);
-    printf("calcHelper.iInnerHigh : %f,%f\n",calcHelper.iInnerHigh.x,calcHelper.iInnerHigh.z);*/
+  
+    time_t sec1;
+    time (&sec1);
 
     moveMapContainer->setMoveZonesContainer(calcHelper.iBounds);
-  time_t sec2;
-  time (&sec2);
-  long diff = sec2 - sec1;
-  printf ("MoveZone Time = %d\n", diff);
+    time_t sec2;
+    time (&sec2);
+    long diff = sec2 - sec1;
+    printf ("MoveZone Time = %d\n", diff);
 
     // Time to save this to disk
     moveMapContainer->save (iMMapDirPath.c_str (), pInnerLow, pInnerHigh, oriLow, oriHigh, MapId, x, y, GenCoords);
