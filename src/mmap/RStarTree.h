@@ -1,10 +1,5 @@
 
 /*
- *	This is intended to be a templated implementation of an R* Tree, designed
- *	to create an efficient and (relatively) small indexing container in N 
- *	dimensions. At the moment, it is a memory-based container instead of disk
- *  based.
- *
  *  inspired by Dustin Spicuzza <dustin@virtualroadside.com>
  *	Based on "The R*-Tree: An Efficient and Robust Access Method for Points 
  *	and Rectangles" by N. Beckmann, H.P. Kriegel, R. Schneider, and B. Seeger
@@ -16,7 +11,6 @@
 #include <functional>
 #include "G3D/Array.h"
 #include "G3D/AABox.h"
-//#include "G3D/Sphere.h"
 
 
 // R* tree parameters
@@ -25,18 +19,13 @@
 
 using namespace G3D;
 
-//void create(void* n) { assert(false); };
-
 template<class T>
 struct RStarLeaf : AABox {
-	
-	//typedef T leaf_type;
 	T leaf;
 };
 
 struct RSTarNode : AABox {
     std::vector< AABox* > items;
-    //AABox bound;
     bool hasLeaves;
 };
 
@@ -52,11 +41,12 @@ struct RSTarNode : AABox {
 	\brief Implementation of an RTree with an R* index
 	
 	@tparam T        		type of leaves stored in the tree
-	@tparam	min_child_items m, in the range 2 <= m < M
-	@tparam max_child_items M, in the range 2 <= m < M
 */
 template<class T> class RStarTree {
 private:
+/*	min_child_items m, in the range 2 <= m < M
+	max_child_items M, in the range 2 <= m < M
+*/
     std::size_t min_child_items;
     std::size_t max_child_items;
     RSTarNode* m_root;
@@ -98,7 +88,6 @@ public:
 			InsertInternal(newLeaf, m_root);
 			
 		m_size += 1;
-//	printf("m_root after insert : %f,%f %f,%f\n",m_root->low().x,m_root->low().y,m_root->high().x,m_root->high().y);
 	}
 	
 	std::size_t GetSize() const { return m_size; }
@@ -164,17 +153,8 @@ public:
 		// enclosing the children rectangles
 		AABox lbounds;
 		leaf->getBounds(lbounds);
-	//	printf("InsertInternal leaf :  %f,%f %f,%f %s\n",lbounds.low().x,lbounds.low().y,lbounds.high().x,lbounds.high().y,(firstInsert?"first":""));
-	//	printf("InsertInternal node :  %f,%f %f,%f %s\n",node->low().x,node->low().y,node->high().x,node->high().y,(node==m_root?"root":""));
 
-		/*AABox nbounds=node->intersect(lbounds);
-		node->set(nbounds.low(), nbounds.high());*/
-		
 		node->merge(lbounds);
-	//	printf("stretched      node :  %f,%f %f,%f %s\n",node->low().x,node->low().y,node->high().x,node->high().y,(node==m_root?"root":""));
-
-		//debug :
-		//assert (firstInsert || node!=m_root);
 	
 		// CS2: If we're at a leaf, then use that level
 		if (node->hasLeaves)
@@ -234,7 +214,6 @@ public:
 		// If OverflowTreatment caused a split of the root, create a new root
 		if (level == m_root)
 		{
-//printf("#########New ROOT\n");
 			RSTarNode * newRoot = new RSTarNode();
 			newRoot->hasLeaves = false;
 			
@@ -337,7 +316,6 @@ public:
 					           R2.high().x-R2.low().x + 
  					           R2.high().y-R2.low().y +
  					           R2.high().z-R2.low().z ;
-					           //R1.edgeDeltas() + R2.edgeDeltas();
 					area 	+= R1.area() + R2.area();		// TODO: need to subtract.. overlap?
 					overlap =  (R1.intersect(R2)).area();
 					
@@ -438,33 +416,24 @@ public:
 	{
 		if (node->hasLeaves)
 		{
-//			printf("hasLeaves :\n");
 			for( std::vector< /*Leaf*/ AABox* >::iterator it = node->items.begin(); it < node->items.end(); ++it)
 			{
-//			printf("? %f,%f %f,%f %f,%f\n",(*it)->low().x,(*it)->low().y,(*it)->high().x,(*it)->high().y,(*it)->low().z,(*it)->high().z);
 				if ((*it)->contains(*pt))
 					{
-					
 					*leaf = ((Leaf*)(*it))->leaf;
-//					printf("FOUND MZ %d\n",(*leaf)->getIndex());
 					return true;
 					}
 			}
 		}
 		else
 		{
-//			printf("hasNodes :\n");
 			for(typename std::vector< /*RSTarNode*/ AABox* >::iterator it = node->items.begin(); it < node->items.end(); ++it)
 			{
-//			printf("? %f,%f %f,%f %f,%f\n",(*it)->low().x,(*it)->low().y,(*it)->high().x,(*it)->high().y,(*it)->low().z,(*it)->high().z);
 				if ((*it)->contains(*pt))
 				{
-//					printf(">");
 					if (_FindOneLeafContaining(pt,(RSTarNode*)(*it),leaf))
 						{
-//						printf("returning MZ %d\n",(*leaf)->getIndex());
 						return true;
-						
 						}
 				}
 			}
@@ -476,7 +445,6 @@ public:
 	FindOneLeafContaining(const Vector3* pt)
 	{
 		T leaf = NULL;
-//		printf("FindOneLeafContaining %f,%f,%f :\n",pt->x,pt->y,pt->z);
 		if (m_root)
 			_FindOneLeafContaining(pt,m_root,&leaf);
 		return leaf;
@@ -487,43 +455,27 @@ public:
 	{
 		if (node->hasLeaves)
 		{
-//			printf("hasLeaves :\n");
 			for( std::vector<AABox* >::iterator it = node->items.begin(); it < node->items.end(); ++it)
 			{
-//			printf("? %f,%f %f,%f %f,%f\n",(*it)->low().x,(*it)->low().y,(*it)->high().x,(*it)->high().y,(*it)->low().z,(*it)->high().z);
 				if ( x > (*it)->low().x && x < (*it)->high().x &&
 				     y > (*it)->low().y && y < (*it)->high().y &&
 				     lowZ < (*it)->high().z &&
 				     highZ > (*it)->low().z )
 					{
-					
 					leaves->append(((Leaf*)(*it))->leaf);
-//					printf("FOUND MZ %d\n",((Leaf*)(*it))->leaf->getIndex());
-					//return true;
 					}
 			}
 		}
 		else
 		{
-//			printf("hasNodes :\n");
 			for(typename std::vector< /*RSTarNode*/ AABox* >::iterator it = node->items.begin(); it < node->items.end(); ++it)
 			{
-//			printf("? %f,%f %f,%f %f,%f\n",(*it)->low().x,(*it)->low().y,(*it)->high().x,(*it)->high().y,(*it)->low().z,(*it)->high().z);
 				if ( x > (*it)->low().x && x < (*it)->high().x &&
 				     y > (*it)->low().y && y < (*it)->high().y &&
 				     lowZ < (*it)->high().z &&
 				     highZ > (*it)->low().z )
 				{
-//				    printf(">");
 				    _FindLeavesByZRange(x, y, lowZ, highZ ,(RSTarNode*)(*it),leaves);
-					
-				    /*
-					if (_FindFindLeafsByZRange(x, y, lowZ, highZ ,(RSTarNode*)(*it),leaves))
-						{
-//						printf("returning MZ %d\n",(*leaf)->getIndex());
-						return true;
-						
-						}*/
 				}
 			}
 		}
@@ -538,41 +490,6 @@ public:
 			_FindLeavesByZRange(x, y, lowZ, highZ ,m_root,&leaves);
 		return leaves;
 	}
-
-	/****************************************************************
-	 * Used to get the tree structure as an array.
-	 * should be used to debug / explore
-	 ****************************************************************/
-	bool
-	_getLeavesArray(RSTarNode* node,Array<T>* leaves)
-	{
-		if (node->hasLeaves)
-		{
-			for( std::vector<AABox* >::iterator it = node->items.begin(); it < node->items.end(); ++it)
-			{
-				leaves->append(((Leaf*)(*it))->leaf);
-			}
-		}
-		else
-		{
-			for(typename std::vector< AABox* >::iterator it = node->items.begin(); it < node->items.end(); ++it)
-			{
-				_getLeavesArray((RSTarNode*)(*it),leaves);
-			}
-		}
-		return false;
-	}
-	
-	/*Array<T>
-	getLeavesArray()
-	{
-		Array<T> leaves = NULL;
-		if (m_root)
-			_getLeavesArray(m_root,&leaves);
-		return leaves;
-	}*/
-
-
 
 	/****************************************************************
 	 * Used to save the tree structure and leaves to a file.
@@ -622,7 +539,6 @@ public:
     }
 	/****************************************************************
 	 * Used to delete all leaves
-	 *
 	 * 
 	 ****************************************************************/
     void
@@ -662,19 +578,13 @@ public:
     _load(FILE* fp,RSTarNode* node,Array<T>* leaves)
     {
     	fread (&node->hasLeaves,1,1,fp);
-    	//printf("hasLeaves : %s\n",(node->hasLeaves?"y":"n"));
 
     	size_t nbItem;
 		fread (&nbItem,sizeof(size_t),1,fp);
-    	//printf("%u childs\n",nbItem);
 		if (node->hasLeaves)
 		{
-		//printf("L");
-
 			for( unsigned int i = 0; i<nbItem; ++i)
 			{
-				//printf(".");
-
 				Leaf * newLeaf = new Leaf();
 			
 				float x1,y1,z1,x2,y2,z2;
@@ -685,7 +595,6 @@ public:
 				fread (&y2,sizeof(float),1,fp);
 				fread (&z2,sizeof(float),1,fp);
 				
-				//newLeaf->leaf = new <class T>();
 				newLeaf->set(Vector3(x1,y1,z1),Vector3(x2,y2,z2));
 				constructor(newLeaf->leaf);
 				newLeaf->leaf->load(fp);
@@ -699,12 +608,8 @@ public:
 		}
 		else
 		{
-			//printf("N");
-
 			for( unsigned int i = 0; i<nbItem; ++i)
 			{
-				//printf(".");
-
 				RSTarNode * newNode = new RSTarNode();
 
 				float x1,y1,z1,x2,y2,z2;
@@ -721,79 +626,24 @@ public:
 		}
     }
 
-    /*void
-    load(FILE* fp)
-    {
-    printf("RSTarNode\n");
-	m_root = new RSTarNode();
-    printf("reserve\n");
-	m_root->items.reserve(min_child_items);
-    printf("_load\n");
-
-	_load(fp ,m_root,NULL);
-    }*/
-
     Array<T>
     load(FILE* fp)
     {
     Array<T> leaves = NULL;
-    //printf("RSTarNode\n");
 	m_root = new RSTarNode();
-    //printf("reserve\n");
 	m_root->items.reserve(min_child_items);
-    //printf("_load\n");
 
 	_load(fp ,m_root,&leaves);
 	return leaves;
     }
-/*
-	// visits a node if necessary
-	template <typename Acceptor, typename Visitor>
-	struct VisitFunctor : std::unary_function< const BoundingBox *, void > {
-	
-		const Acceptor &accept;
-		Visitor &visit;
-		
-		explicit VisitFunctor(const Acceptor &a, Visitor &v) : accept(a), visit(v) {}
-	
-		void operator()( BoundedItem * item ) 
-		{
-			Leaf * leaf = static_cast<Leaf*>(item);
-		
-			if (accept(leaf))
-				visit(leaf);
-		}
-	};
-	
-	
-	// this functor recursively walks the tree
-	template <typename Acceptor, typename Visitor>
-	struct QueryFunctor : std::unary_function< const BoundedItem, void > {
-		const Acceptor &accept;
-		Visitor &visitor;
-		
-		explicit QueryFunctor(const Acceptor &a, Visitor &v) : accept(a), visitor(v) {}
-	
-		void operator()(BoundedItem * item)
-		{
-			Node * node = static_cast<Node*>(item);
-		
-			if (visitor.ContinueVisiting && accept(node))
-			{
-				if (node->hasLeaves)
-					for_each(node->items.begin(), node->items.end(), VisitFunctor<Acceptor, Visitor>(accept, visitor));
-				else
-					for_each(node->items.begin(), node->items.end(), *this);
-			}
-		}
-	};
-	*/
 	
 	/****************************************************************
 	 * Used to remove items from the tree
 	 *
 	 * At some point, the complexity just gets ridiculous. I'm pretty
 	 * sure that the remove functions are close to that by now... 
+	 **********
+	 * probably not needed for movezones
 	 ****************************************************************/
 	
 /*
@@ -904,7 +754,6 @@ public:
 		}
 	}; */
 
-	//template <typename RSTarNode>
 	struct SortNodesByFirstEdge : 
 		public std::binary_function< const AABox * const, const AABox * const, bool >
 	{
@@ -917,7 +766,6 @@ public:
 		}
 	};
 	
-//	template <typename RSTarNode>
 	struct SortNodesBySecondEdge : 
 		public std::binary_function< const AABox * const, const AABox * const, bool >
 	{
@@ -931,7 +779,6 @@ public:
 	};
 	
 	
-//	template <typename RSTarNode>
 	struct SortNodesByDistanceFromCenter : 
 		public std::binary_function< const AABox * const, const AABox * const, bool >
 	{
@@ -944,7 +791,6 @@ public:
 		}
 	};
 	
-	//template <typename AABox>
 	struct SortNodesByAreaEnlargement : 
 		public std::binary_function< const AABox * const, const AABox * const, bool >
 	{
@@ -957,7 +803,6 @@ public:
 		}
 	};
 	
-//	template <typename AABox>
 	struct SortNodesByOverlapEnlargement : 
 		public std::binary_function< const AABox * const, const AABox * const, bool >
 	{
@@ -975,7 +820,6 @@ public:
 	 * AABox
 	 **********************************************************/
 	
-//	template <typename RSTarNode>
 	struct StretchAABox : 
 		public std::unary_function< const AABox * const, void >
 	{
