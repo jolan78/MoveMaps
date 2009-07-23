@@ -1054,7 +1054,11 @@ namespace VMAP
         
         orig = Vector3(atof(command[argnb+1].c_str()), atof(command[argnb+2].c_str()), atof(command[argnb+3].c_str()));
         dest = Vector3(atof(command[argnb+4].c_str()), atof(command[argnb+5].c_str()), atof(command[argnb+6].c_str()));
+        argnb += 6;
         }
+      
+      bool showVisited = (command.size()>argnb+1 && command[++argnb] == "showzones");
+      
       printf("looking for path %f,%f,%f -> %f,%f,%f\n",orig.x,orig.y,orig.z,dest.x,dest.y,dest.z);
       
       PathGenerator* pathGen = new PathGenerator(orig,dest,iMZcontainer);
@@ -1066,12 +1070,12 @@ namespace VMAP
         consolePrintf("orig is not inside a zone");
         return;
         }
-      else if (result == ERR_DEST_NOT_FOUND)
+      if (result == ERR_DEST_NOT_FOUND)
         {
         consolePrintf("dest is not inside a zone");
         return;
         }
-      else if (result == PATH_FOUND)
+      if (result == PATH_FOUND)
         {
         char name[14];
         Array<std::string> gridCoords = stringSplit(mapref,':');
@@ -1108,26 +1112,28 @@ namespace VMAP
         iTriVarTable.set (name, new VAR (vpthArray, iVARAreaRef));
         iTriIndexTable.set (name, ipthArray);
         }
-      else if (result == PATH_NOT_FOUND)
+
+      Array<int> izArray;
+      Array<Vector3> vzArray;
+      char name[20];
+      Array<std::string> gridCoords = stringSplit(command[2],':');
+      if (gridCoords.size()<0)
         {
-        consolePrintf("path not found ; adding visited zones instead");
+        consolePrintf("syntax error");
+        return;
+        }
+      sprintf(name,"4_pzones_%s-%s",gridCoords[0].c_str(),gridCoords[1].c_str());
+
+      if (showVisited || result == PATH_NOT_FOUND)
+        {
+        if (result == PATH_NOT_FOUND)
+          consolePrintf("path not found ; adding visited zones instead");
         Array<unsigned int> visitedMZ = pathGen->getVisitedCells();
         
         printf("%d visited cells, first:%u\n",visitedMZ.size(),visitedMZ[1]);
         
 
         // Add the Zones
-        Array<int> izArray;
-        Array<Vector3> vzArray;
-        char name[20];
-        Array<std::string> gridCoords = stringSplit(command[2],':');
-        if (gridCoords.size()<0)
-          {
-          consolePrintf("syntax error");
-          return;
-          }
-        sprintf(name,"4_pzones_%s-%s",gridCoords[0].c_str(),gridCoords[1].c_str());
-        
         unsigned int count = 0;
         AABox b;
 
@@ -1218,11 +1224,9 @@ namespace VMAP
         
         printf("added %d visited cell vertices\n",vzArray.size());
 
-        iTriVarTable.set (name, new VAR (vzArray, iVARAreaRef));
-        iTriIndexTable.set (name, izArray);
-        
-        return;
         }
+      iTriVarTable.set (name, new VAR (vzArray, iVARAreaRef));
+      iTriIndexTable.set (name, izArray);
 
       return;
       }

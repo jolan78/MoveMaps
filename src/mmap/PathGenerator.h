@@ -11,10 +11,10 @@
 #define ERR_DEST_NOT_FOUND 2
 #define PATH_NOT_FOUND 3
 
-#define STRAIGHT_COST 10;
-#define DIAGONAL_COST 14;
+#define STRAIGHT_COST 10
+#define DIAGONAL_COST 14
 
-// manhattan gives better result
+// TODO : re-check
 #define MANHATTAN_DIST 1
 #define DIAGONAL_DIST 2
 
@@ -47,20 +47,22 @@ namespace VMAP
     
     Array<PathNode*> openZones;
     Array<PathNode*> closedZones;
-    Table<unsigned int,PathNode*> openMZTable;
+    // FIXME : temporary solution: we must add zones to open list if we pass thru a different portal
+    //Table<unsigned int,PathNode*> openMZTable;
+    Table<MovePortal*,PathNode*> _openMZTable;
     Array<unsigned int> closedMZId;
 
-    unsigned int getFastDistance(Vector3 orig,Vector2 dest) { getFastDistance(orig.xy(),dest); }
+    unsigned int getFastDistance(Vector3 orig,Vector2 dest) { return getFastDistance(orig.xy(),dest); }
     
-    unsigned int getFastDistance(Vector2 orig,Vector3 dest) { getFastDistance(orig,dest.xy()); }
+    unsigned int getFastDistance(Vector2 orig,Vector3 dest) { return getFastDistance(orig,dest.xy()); }
     
-    unsigned int getFastDistance(Vector3 orig,Vector3 dest) { getFastDistance(orig.xy(),dest.xy()); }
+    unsigned int getFastDistance(Vector3 orig,Vector3 dest) { return getFastDistance(orig.xy(),dest.xy()); }
 
     unsigned int getFastDistance(Vector2 orig,Vector2 dest)
     {
       if ( pDistCalc == MANHATTAN_DIST )
         {
-        return (abs(orig.x-dest.y) + abs(orig.y-dest.y)) * STRAIGHT_COST;
+        return (abs(orig.x-dest.x) + abs(orig.y-dest.y)) * STRAIGHT_COST;
         }
       else
         {
@@ -76,7 +78,7 @@ namespace VMAP
     ~PathGenerator()
       {
       openZones.deleteAll();
-      closedZones.deleteAll();
+      // FIXME closedZones.deleteAll();
       }
 
     void setDistanceCalc(unsigned int dcalc) { pDistCalc=dcalc; }
@@ -84,7 +86,7 @@ namespace VMAP
     
     void PrintPath()
       {
-      printf("Opened %u, closed %u zones\n",openMZTable.size(),closedMZId.size());
+      printf("Opened %u, closed %u zones\n",_openMZTable.size(),closedMZId.size());
       for (unsigned int i=0;i<Path.size();++i)
         printf("%f,%f,%f\n",Path[i].x,Path[i].y,Path[i].z);
       }
@@ -131,14 +133,14 @@ namespace VMAP
       PN->parent=NULL;
       assert(PN->moveZone);
       openZones.append(PN);
-      openMZTable.set(PN->moveZone->getIndex(),PN);
+      _openMZTable.set(NULL/*PN->moveZone->getIndex()*/,PN);
 
       do {
         PN = openZones.pop(); // shrink array, slower but safer, perhaps not necessary shrink now ?
         assert(PN->moveZone);
         closedMZId.push_back(PN->moveZone->getIndex());
         closedZones.push_back(PN);
-        
+
         if (PN->moveZone == destMZ)
           {
           /* we added the dest zone to the closed list,
@@ -218,16 +220,16 @@ namespace VMAP
             #endif
 
             PathNode* destPN;
-            if (openMZTable.get((*p)->getDestinationID(),destPN))
+            if (_openMZTable.get((*p)/*->getDestinationID()*/,destPN) && destPN->movePortal == (*p))
               {
               assert(destPN->moveZone);
-              int distDone=PN->distDone + getFastDistance(PN->position,portalCenter);
+              unsigned int distDone=PN->distDone + getFastDistance(PN->position,portalCenter);
               if (distDone < destPN->distDone)
                 { // this node is better than the one in the open list, replace it
                 // TODO : lot of duplicated code here ...
                 destPN->position=portalCenter;
                 destPN->movePortal=(*p);
-                destPN->distDone=PN->distDone + getFastDistance(PN->position,portalCenter);
+                destPN->distDone=distDone;
                 destPN->distRemain=getFastDistance(portalCenter,pDest);
                 destPN->score=destPN->distDone + destPN->distRemain;
                 destPN->parent=PN;
@@ -239,7 +241,7 @@ namespace VMAP
                   if (destPN->score < openZones[nodeIdx]->score)
                     break;
                   }
-               openZones.insert(nodeIdx,destPN);
+               openZones.insert(nodeIdx+1,destPN);
                 }
               }
             else
@@ -261,8 +263,8 @@ namespace VMAP
                   break;
                 }
 
-              openZones.insert(nodeIdx,destPN);
-              openMZTable.set(destPN->moveZone->getIndex(),destPN);
+              openZones.insert(nodeIdx+1,destPN);
+              _openMZTable.set(/*destPN->moveZone->getIndex()*/destPN->movePortal,destPN);
 
               }
             }
