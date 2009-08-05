@@ -77,21 +77,21 @@ main (int argc, char** argv)
     if (result != PATH_FOUND)
       {
       
-      printf("path failed(%u) : %f,%f,%f -> %f,%f,%f\n",result,benchPoints[orig].x,benchPoints[orig].y,benchPoints[orig].z,benchPoints[dest].x,benchPoints[dest].y,benchPoints[dest].z);
+      /*printf("path failed(%u) : %f,%f,%f -> %f,%f,%f\n",result,benchPoints[orig].x,benchPoints[orig].y,benchPoints[orig].z,benchPoints[dest].x,benchPoints[dest].y,benchPoints[dest].z);
       VMAP::MoveZone* startMZ=MZcontainer->getMoveZoneByCoords(benchPoints[orig]);
       VMAP::MoveZone* destMZ=MZcontainer->getMoveZoneByCoords(benchPoints[dest]);
       if (startMZ)
 			printf("Start MZ: %u ",startMZ->getIndex());
       if (destMZ)
 			printf("Dest MZ: %u ",destMZ->getIndex());
-      printf("\n");
+      printf("\n");*/
         
       delete pathGen;
       VMAP::PathGenerator* pathGen = new VMAP::PathGenerator(benchPoints[dest],benchPoints[orig],MZcontainer);
       backresult = pathGen->GeneratePath();
       if (backresult == PATH_FOUND)
         {
-        printf("but backward path works !\n");
+        printf("backward path works !\n");
         }
       /*else
         goodBenchPoints.push_back(benchPoints[orig]);*/

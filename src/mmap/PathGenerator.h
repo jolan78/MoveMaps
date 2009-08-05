@@ -71,7 +71,41 @@ namespace VMAP
         return diagonalSteps * DIAGONAL_COST + straightSteps * STRAIGHT_COST;
         }
     }
-
+  
+  void insertPathNode(PathNode* PN)
+    {
+    // dychotomy : about 10 time less comparisons
+    int min=0;
+    int max=openZones.size();
+    unsigned int middle=0;
+    
+    while (max>min)
+      {
+      middle=min+((max-min)>>1); // >>1 => /2
+      if (PN->score < openZones[middle]->score)
+        min=middle+1;
+      else if (PN->score > openZones[middle]->score)
+        max=middle-1;
+      else
+        {
+        min=middle;
+        break;
+        }
+      }
+    openZones.insert(min,PN);
+    /*
+    // regular insert
+    int nodeIdx=openZones.size()-1;
+    while (nodeIdx >= 0)
+      {
+      if (PN->score <= openZones[nodeIdx]->score)
+        break;
+      nodeIdx--;
+      }
+    openZones.insert(nodeIdx+1,PN);
+    */
+    }
+  
   public:
     PathGenerator(Vector3 orig,Vector3 dest,const MoveZoneContainer* MZContainer) {pOrig=orig,pDest=dest,pMoveZoneContainer=MZContainer,pDistCalc=MANHATTAN_DIST,pPostStretch=false ;} // TODO: use a load / unload manager
 
@@ -244,15 +278,7 @@ namespace VMAP
                 destPN->parent=PN;
                 openZones.remove(openZones.findIndex(destPN));// remove() is slower but fastRemove() will cause problems with insert position searching
                 
-                int nodeIdx=openZones.size()-1;
-                while (nodeIdx >= 0)
-                  {
-                  if (destPN->score < openZones[nodeIdx]->score)
-                    break;
-                  nodeIdx--;
-                  }
-                
-                openZones.insert(nodeIdx+1,destPN);
+                insertPathNode(destPN);
                 }
               }
             else
@@ -267,15 +293,7 @@ namespace VMAP
               destPN->score=destPN->distDone + destPN->distRemain;
               destPN->parent=PN;
               
-              int nodeIdx=openZones.size()-1;
-              
-              while (nodeIdx >= 0)
-                {
-                if (destPN->score < openZones[nodeIdx]->score)
-                  break;
-                nodeIdx--;
-                }
-              openZones.insert(nodeIdx+1,destPN);
+              insertPathNode(destPN);
               _openMZTable.set(/*destPN->moveZone->getIndex()*/destPN->movePortal,destPN);
               }
             }
