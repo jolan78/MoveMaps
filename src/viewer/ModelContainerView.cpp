@@ -1128,6 +1128,10 @@ namespace VMAP
         {
         if (result == PATH_NOT_FOUND)
           consolePrintf("path not found ; adding visited zones instead");
+        
+        pathGen->PrintPath();
+
+        
         Array<unsigned int> visitedMZ = pathGen->getVisitedCells();
         
         printf("%d visited cells, first:%u\n",visitedMZ.size(),visitedMZ[1]);

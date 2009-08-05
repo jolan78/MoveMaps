@@ -87,8 +87,17 @@ namespace VMAP
     void PrintPath()
       {
       printf("Opened %u, closed %u zones\n",_openMZTable.size(),closedMZId.size());
+      /*if (!Path.size())
+        {
+        printf("open:\n");
+        for (Table<MovePortal*,PathNode*>::Iterator itr = _openMZTable.begin();itr != _openMZTable.end();++itr)
+          printf("%u (%u)\n",(*itr).value->moveZone->getIndex(),(*itr).key);
+        printf("closed:\n");
+        for (unsigned int i=0;i<closedMZId.size();++i)
+          printf("%u\n",closedMZId[i]);
+        }
       for (unsigned int i=0;i<Path.size();++i)
-        printf("%f,%f,%f\n",Path[i].x,Path[i].y,Path[i].z);
+        printf("%f,%f,%f\n",Path[i].x,Path[i].y,Path[i].z);*/
       }
 
     float getRealDistance()
@@ -233,15 +242,17 @@ namespace VMAP
                 destPN->distRemain=getFastDistance(portalCenter,pDest);
                 destPN->score=destPN->distDone + destPN->distRemain;
                 destPN->parent=PN;
-                openZones.fastRemove(openZones.findIndex(destPN));
-                unsigned int nodeIdx=openZones.size();
-                while (nodeIdx > 0)
+                openZones.remove(openZones.findIndex(destPN));// remove() is slower but fastRemove() will cause problems with insert position searching
+                
+                int nodeIdx=openZones.size()-1;
+                while (nodeIdx >= 0)
                   {
-                  nodeIdx--;
                   if (destPN->score < openZones[nodeIdx]->score)
                     break;
+                  nodeIdx--;
                   }
-               openZones.insert(nodeIdx+1,destPN);
+                
+                openZones.insert(nodeIdx+1,destPN);
                 }
               }
             else
@@ -255,17 +266,17 @@ namespace VMAP
               destPN->distRemain=getFastDistance(portalCenter,pDest);
               destPN->score=destPN->distDone + destPN->distRemain;
               destPN->parent=PN;
-              int nodeIdx=openZones.size();
-              while (nodeIdx > 0)
+              
+              int nodeIdx=openZones.size()-1;
+              
+              while (nodeIdx >= 0)
                 {
-                nodeIdx--;
                 if (destPN->score < openZones[nodeIdx]->score)
                   break;
+                nodeIdx--;
                 }
-
               openZones.insert(nodeIdx+1,destPN);
               _openMZTable.set(/*destPN->moveZone->getIndex()*/destPN->movePortal,destPN);
-
               }
             }
           // TODO : else manage nearby grid load
