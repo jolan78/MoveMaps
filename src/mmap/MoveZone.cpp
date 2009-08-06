@@ -196,7 +196,7 @@ namespace VMAP
 
 
  void
- MoveZoneContainer::generate(const MoveMapBox* iMoveMapBoxArray,int iNMoveMapBoxes,AABox gridBounds)
+ MoveZoneContainerGenerator::generate(const MoveMapBox* iMoveMapBoxArray,int iNMoveMapBoxes,AABox gridBounds)
    {
     MZ_Tree = new RStarTree<MoveZone*>(2, 4);
     moveZoneIndex=0;
@@ -236,12 +236,12 @@ namespace VMAP
 
                     if (!reachedPos.contains(Vector2(sPos.x,sPos.y)) && !( sPos.x + basePos.x < gridBounds.low().x + 0.5 || sPos.y + basePos.z < gridBounds.low().z + 0.5 || sPos.x + basePos.x > gridBounds.high().x - 1.5 ||  sPos.y + basePos.z > gridBounds.high().z - 1.5  /* edge of the grid */ )) // todo : remove : we check at outOfZonePoints.push_back
                       {
-                      MoveZone* MZ = new MoveZone (moveMapBox,moveZoneIndex,&sPos,&outOfZonePoints,&reachedPos,gridBounds);
+                      MoveZoneGenerator* MZ = new MoveZoneGenerator (moveMapBox,moveZoneIndex,&sPos,&outOfZonePoints,&reachedPos,gridBounds);
   
                       AABox test= MZ->getBounds();
                       
-                      MZ_Tree->Insert(MZ);
-                      pMoveZonesArray.append(MZ);
+                      MZ_Tree->Insert((MoveZone*)MZ);
+                      pMoveZonesArray.append((MoveZone*)MZ);
                       BoxMZCount++;
                       moveZoneIndex++;
                       }
@@ -256,12 +256,12 @@ namespace VMAP
   for (unsigned int i=0; i < pMoveZonesArray.size();i++)
     {
     Array<MovePortal*> iPortals;
-    pMoveZonesArray[i]->setPortalArray(&iPortals);
+    ((MoveZoneGenerator*)pMoveZonesArray[i])->setPortalArray(&iPortals);
     
     for (unsigned short j=0; j<4; ++j)
       {
-      connectLayerPortals(pMoveZonesArray[i],j);
-      connectPortals(pMoveZonesArray[i],j);
+      connectLayerPortals((MoveZoneGenerator*)pMoveZonesArray[i],j);
+      connectPortals((MoveZoneGenerator*)pMoveZonesArray[i],j);
       }
     }
   printf("####finished. %u zones\n",moveZoneIndex);
@@ -269,7 +269,7 @@ namespace VMAP
   }
 
   void
-  MoveZoneContainer::connectLayerPortals(MoveZone* iMoveZone,unsigned int direction)
+  MoveZoneContainerGenerator::connectLayerPortals(MoveZoneGenerator* iMoveZone,unsigned int direction)
     {
     Table<Vector2, Vector3> * layerPortals=iMoveZone->getLayerConnexions(direction);
     if (layerPortals->size()==0)
@@ -280,9 +280,9 @@ namespace VMAP
     AABox fromBounds;
     iMoveZone->getBoxBounds(fromBounds);
     
-    MoveZone* prevMZ=NULL;
+    MoveZoneGenerator* prevMZ=NULL;
     Array<MoveZone*> MZArray;
-    MoveZone* curMZ=NULL;
+    MoveZoneGenerator* curMZ=NULL;
     MovePortal* CurrentPortal;
     Array<MovePortal*> iPortals = iMoveZone->getPortalArray();
     Vector3 curpos,prevpos;
@@ -336,7 +336,7 @@ namespace VMAP
           
           for (unsigned int i=0; i<MZArray.size(); ++i)
             {
-            MoveZone* tmpMZ=MZArray[i];
+            MoveZoneGenerator* tmpMZ=(MoveZoneGenerator*)MZArray[i];
             float h=tmpMZ->getGlobalHeightAt(curpos.x,curpos.y);
             if (h != FLOAT_HEIGHT_CANT_REACH && abs(h - curpos.z) < 1.8)
               {
@@ -375,12 +375,12 @@ namespace VMAP
     }
 
   void
-  MoveZoneContainer::connectPortals(MoveZone* iMoveZone,unsigned int direction)
+  MoveZoneContainerGenerator::connectPortals(MoveZoneGenerator* iMoveZone,unsigned int direction)
     {
     AABox bounds=iMoveZone->getBounds();
     Table<Vector2, Vector3> * PortalCells=iMoveZone->getPortalCell(direction);
-    MoveZone* prevMZ=NULL;
-    MoveZone* curMZ=NULL;
+    MoveZoneGenerator* prevMZ=NULL;
+    MoveZoneGenerator* curMZ=NULL;
     MovePortal* CurrentPortal;
     Array<MovePortal*> iPortals = iMoveZone->getPortalArray();
     Vector3 curpos,prevpos;
@@ -423,7 +423,7 @@ namespace VMAP
         {
         if (PortalCells->get(Vector2(x,y),curpos))
           {
-          curMZ=getMoveZoneByCoords(curpos);
+          curMZ=(MoveZoneGenerator*)getMoveZoneByCoords(curpos);
           bool isGridPortal=false;
           if (curMZ == NULL)
             {
@@ -477,6 +477,21 @@ namespace VMAP
     }
   
   void
+  MoveZoneContainerGenerator::saveGridCnx(const char* filename, const unsigned int direction)
+    {
+    
+    if (gridPortals[direction].size() > 0)
+      {
+      FILE *GridCnx = fopen (filename, "wb");
+      for(Array<gridPortal>::ConstIterator itr= gridPortals[direction].begin();itr != gridPortals[direction].end();++itr)
+        {
+        fprintf (GridCnx, "%u,%f,%f,%f\n", itr->MoveZoneId, itr->fromx, itr->fromy, itr->destz);
+        }
+      fclose (GridCnx);
+      }
+    }
+  
+  void
   MoveZoneContainer::reconnectPortals()
     {
     for (unsigned int zoneID=0;zoneID<pMoveZonesArray.size();++zoneID)
@@ -495,7 +510,7 @@ namespace VMAP
     return MZ_Tree->FindLeavesByZRange(x, y, lowZ, highZ);
     }
   
-  MoveZone::MoveZone (const MoveMapBox* iMoveMapBox,unsigned int ZoneIndex,Vector2* sPos,Set<Vector2>* outOfZonePoints,Set<Vector2>* reachedPos,AABox iGridBounds)
+  MoveZoneGenerator::MoveZoneGenerator (const MoveMapBox* iMoveMapBox,unsigned int ZoneIndex,Vector2* sPos,Set<Vector2>* outOfZonePoints,Set<Vector2>* reachedPos,AABox iGridBounds)
     {
     iIndex=ZoneIndex;
     myOutOfZonePoints=outOfZonePoints;
@@ -549,7 +564,7 @@ namespace VMAP
     }
   
   bool
-  MoveZone::Extend(unsigned int direction,unsigned int extendermask)
+  MoveZoneGenerator::Extend(unsigned int direction,unsigned int extendermask)
       {
       int lineX1,lineX2,lineY1,lineY2;
       short int deltatestX=0;
@@ -899,20 +914,11 @@ namespace VMAP
       iPortals[i]->reconnect(moveZoneArray);
     }
   
-  void
-  MoveZoneContainer::setZone(AABox* pBox,unsigned int i, Array<MovePortal*> * PArray)
-  {
-    MoveZone *iTmp = new MoveZone();
-    iTmp->setBounds(pBox);
-    iTmp->setIndex(i);
-    iTmp->setPortalArray(PArray);
-    pMoveZonesArray.append(iTmp);
-  }
-    
   bool MoveZone::operator== (const MoveZone& pMZ) const
     {
     return iIndex == pMZ.getIndex();
     }
+  
   size_t MoveZone::hashCode ()
     {
       return (getBounds ().hashCode ());

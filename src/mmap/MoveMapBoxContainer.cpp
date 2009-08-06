@@ -359,7 +359,9 @@ namespace VMAP
   void
   MoveMapContainer::setMoveZonesContainer (AABox gridBounds)
   {
-    iMoveZoneContainer = new MoveZoneContainer(iMoveMapBoxArray,iNMoveMapBoxes,gridBounds); 
+    MoveZoneContainerGenerator* MZG = new MoveZoneContainerGenerator(iMoveMapBoxArray,iNMoveMapBoxes,gridBounds);
+    iMoveZoneContainer = (MoveZoneContainer*)MZG;
+    
   }
 
 
@@ -564,40 +566,32 @@ namespace VMAP
 
     fclose (output);
 
+
     for (unsigned int direction = 0; direction<4; ++direction)
       {
-      const Array<gridPortal>* iGridPortals=iMoveZoneContainer->getGridPortals(direction);
-      if (iGridPortals->size() > 0)
-        {
-        int x_val = mapx;
-        int y_val = mapy;
+      int x_val = mapx;
+      int y_val = mapy;
 
-        switch (direction)
-          {
-          // grid coords are YX
-          case EXTEND_N :
-            x_val+=1;
-          break;
-          case EXTEND_S :
-            x_val-=1;
-          break;
-          case EXTEND_E :
-            y_val+=1;
-          break;
-          case EXTEND_W :
-            y_val-=1;
-          break;
-          }
-        char filename[15];
-        sprintf (filename, "grid_cnx_%03u_%02u_%02u_%02u_%02u.tmp", MapId, mapx, mapy, x_val, y_val);
-        nName = startCoordsPath + "/" + (std::string)filename;
-        FILE *GridCnx = fopen (nName.c_str (), "wb");
-        for(Array<gridPortal>::ConstIterator itr= iGridPortals->begin();itr != iGridPortals->end();++itr)
-          {
-          fprintf (GridCnx, "%u,%f,%f,%f\n", itr->MoveZoneId, itr->fromx, itr->fromy, itr->destz);
-          }
-        fclose (GridCnx);
+      switch (direction)
+        {
+        // grid coords are YX
+        case EXTEND_N :
+          x_val+=1;
+        break;
+        case EXTEND_S :
+          x_val-=1;
+        break;
+        case EXTEND_E :
+          y_val+=1;
+        break;
+        case EXTEND_W :
+          y_val-=1;
+        break;
         }
+      char filename[15];
+      sprintf (filename, "grid_cnx_%03u_%02u_%02u_%02u_%02u.tmp", MapId, mapx, mapy, x_val, y_val);
+      nName = startCoordsPath + "/" + (std::string)filename;
+      ((MoveZoneContainerGenerator*)iMoveZoneContainer)->saveGridCnx(nName.c_str (),direction);
       }
 
     printf ("Mmap saved (%u iNMoveMapBoxes and %u iNTreeNodes)\n", iNMoveMapBoxes, iNTreeNodes);

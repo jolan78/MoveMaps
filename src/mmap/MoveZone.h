@@ -70,23 +70,11 @@ namespace VMAP
 
   class MoveZone
   {
-  private:
-    AABox iBounds;
-    Vector3 low;
-    Vector3 high;
-    Vector3 calcBasePos;
-    AABox gridBounds;
-    Array<MovePortal*> iPortals;
-    G3D::Table<Vector2, Vector3> PortalCells[4];
-    G3D::Table<Vector2, Vector3> LayerConnexions[4];
-    
-    Set<Vector2> *myOutOfZonePoints;
-    Set<Vector2> *myReachedPos;
-	const MoveMapBox* zMoveMapBox;
-	
-	bool Extend(unsigned int direction,unsigned int extendermask);
-	
+  protected:
 	unsigned int iIndex;
+    AABox iBounds;
+    Array<MovePortal*> iPortals;
+
   public:
     MoveZone () { };
     MoveZone (const MoveMapBox* iMoveMapBox,unsigned int ZoneIndex,Vector2* sPos,Set<Vector2>* outOfZonePoints,Set<Vector2>* reachedPos,AABox iGridBounds);
@@ -98,59 +86,49 @@ namespace VMAP
     void load(FILE* fp);
     void reconnectPortals(Array<MoveZone*>& moveZoneArray);
     
-    const AABox&
-    getBounds () const
-    {
-      return iBounds;
-    }
+    unsigned int getIndex() const { return iIndex; }
+
+    const AABox& getBounds () const { return iBounds; }
     
+    void setIndex(unsigned int i) { iIndex=i; }
+    
+    const Array<MovePortal*>& getPortalArray() const { return iPortals; }
+    
+    void setPortalArray(Array<MovePortal*> * PArray) { iPortals = *PArray; }
+    
+    bool operator== (const MoveZone& pMZ) const;
+    size_t hashCode ();
+    
+  };
+
+class MoveZoneGenerator : public MoveZone
+  {
+  private:
+    Vector3 low;
+    Vector3 high;
+    Vector3 calcBasePos;
+    AABox gridBounds;
+    G3D::Table<Vector2, Vector3> PortalCells[4];
+    G3D::Table<Vector2, Vector3> LayerConnexions[4];
+    
+    Set<Vector2> *myOutOfZonePoints;
+    Set<Vector2> *myReachedPos;
+	const MoveMapBox* zMoveMapBox;
+
+	bool Extend(unsigned int direction,unsigned int extendermask);
+  public:
+    MoveZoneGenerator () { };
+    MoveZoneGenerator (const MoveMapBox* iMoveMapBox,unsigned int ZoneIndex,Vector2* sPos,Set<Vector2>* outOfZonePoints,Set<Vector2>* reachedPos,AABox iGridBounds);
+
     void
-    getBoxBounds (AABox& Bounds) const
-    {
-      Bounds=zMoveMapBox->getBounds ();
-    }
-    void
-    setBounds (const AABox*  pBox)
-    {
-      iBounds=*pBox;
-    }
+    getBoxBounds (AABox& Bounds) const { Bounds=zMoveMapBox->getBounds (); }
+
+    void setBounds (const AABox*  pBox) { iBounds=*pBox; }
+
+    Table<Vector2, Vector3>* getPortalCell(unsigned int direction) { return &PortalCells[direction]; }
     
-    Table<Vector2, Vector3>*
-    getPortalCell(unsigned int direction)
-      {
-      return &PortalCells[direction];
-      }
-    
-    Table<Vector2, Vector3>*
-    getLayerConnexions(unsigned int direction)
-      {
-      return &LayerConnexions[direction];
-      }
-    
-    unsigned int 
-    getIndex() const
-      {
-      return iIndex;
-      }
-    
-    void
-    setIndex(unsigned int i)
-      {
-      iIndex=i;
-      }
-    
-    const Array<MovePortal*>&
-    getPortalArray() const
-      {
-      return iPortals;
-      }
-    
-    void
-    setPortalArray(Array<MovePortal*> * PArray)
-      {
-      iPortals = *PArray;
-      }
-    
+    Table<Vector2, Vector3>* getLayerConnexions(unsigned int direction) { return &LayerConnexions[direction]; }
+        
     float
     getLocalHeightAt(float x, float y)
       {
@@ -173,12 +151,8 @@ namespace VMAP
       const Vector3 basePos = zMoveMapBox->getBasePosition ();
       return getLocalHeightAt(x-basePos.x, y-basePos.z);
       }
-
-    bool operator== (const MoveZone& pMZ) const;
-    size_t hashCode ();
-    
   };
-  
+
   // to sort Array<MoveZone*> returned by MZ_Tree->load()
   static bool MoveZoneLT(MoveZone*const& elem1, MoveZone*const& elem2)
     {
@@ -199,14 +173,10 @@ namespace VMAP
 {
   class MoveZoneContainer
   {
-  private:
+  protected:
     RStarTree<MoveZone*> *MZ_Tree;
     Array<MoveZone*> pMoveZonesArray;
-    unsigned int moveZoneIndex;
-    Array<gridPortal> gridPortals[4];
-    Set<Vector2> outOfZonePoints;
 
-    void generate(const MoveMapBox* iMoveMapBoxArray,int iNMoveMapBoxes,AABox gridBounds);
 
   public:
     MoveZoneContainer() {};
@@ -214,18 +184,10 @@ namespace VMAP
       {
       MZ_Tree->deleteAll();
       }
-    
-    MoveZoneContainer(const MoveMapBox* iMoveMapBoxArray,int iNMoveMapBoxes,AABox gridBounds)
-      {
-      generate(iMoveMapBoxArray,iNMoveMapBoxes,gridBounds);
-      }
 
     MoveZone* getMoveZoneByCoords (const Vector3& pPos) const;
     Array<MoveZone*> getMoveZonesByZRange (const float x, const float y, const float lowZ, const float highZ) const;
-    
-    void connectPortals(MoveZone* iMoveZone,unsigned int direction);
-    void connectLayerPortals(MoveZone* iMoveZone,unsigned int direction);
-    
+        
     void reconnectPortals();
     
     void
@@ -244,31 +206,35 @@ namespace VMAP
     }
 
     /* for debug only */
-    Array<MoveZone*>
-    getMoveZoneArray() const
-    {
-      return pMoveZonesArray;
-    }
+    Array<MoveZone*> getMoveZoneArray() const { return pMoveZonesArray; }
+    int getNZones() const { return pMoveZonesArray.size(); }
 
-    int
-    getNZones() const
-    {
-      return pMoveZonesArray.size();
-    }
-    
-    MoveZone*
-    getZone(unsigned int i) const
-    {
-      return pMoveZonesArray[i];
-    }
+    MoveZone* getZone(unsigned int i) const { return pMoveZonesArray[i]; }
 
-    const Array<gridPortal>*
-    getGridPortals(unsigned int direction)
+  };
+  
+  class MoveZoneContainerGenerator  : public MoveZoneContainer
+  {
+  private:
+    unsigned int moveZoneIndex;
+    Array<gridPortal> gridPortals[4];
+    Set<Vector2> outOfZonePoints;
+    void generate(const MoveMapBox* iMoveMapBoxArray,int iNMoveMapBoxes,AABox gridBounds);
+  public:
+    MoveZoneContainerGenerator() {};
+    MoveZoneContainerGenerator(const MoveMapBox* iMoveMapBoxArray,int iNMoveMapBoxes,AABox gridBounds)
       {
-      return &gridPortals[direction];
+      generate(iMoveMapBoxArray,iNMoveMapBoxes,gridBounds);
       }
     
-    void setZone(AABox* pBox,unsigned int i, Array<MovePortal*> * PArray);
+    void connectPortals(MoveZoneGenerator* iMoveZone,unsigned int direction);
+    void connectLayerPortals(MoveZoneGenerator* iMoveZone,unsigned int direction);
+
+    const Array<gridPortal>*
+    getGridPortals(unsigned int direction) { return &gridPortals[direction]; }
+
+    void saveGridCnx(const char* filename, const unsigned int direction);
+
   };
 
   //========================================================

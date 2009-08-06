@@ -17,6 +17,7 @@
 namespace VMAP
 {
   class MoveZoneContainer;
+  class MoveZoneContainerGenerator;
 
   //========================================================
 
