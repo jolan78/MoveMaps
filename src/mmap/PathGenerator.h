@@ -112,7 +112,7 @@ namespace VMAP
     ~PathGenerator()
       {
       openZones.deleteAll();
-      // FIXME closedZones.deleteAll();
+      closedZones.deleteAll();
       }
 
     void setDistanceCalc(unsigned int dcalc) { pDistCalc=dcalc; }
