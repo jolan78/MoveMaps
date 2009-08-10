@@ -328,6 +328,7 @@ namespace VMAP
     Find the index in the MoveMapConnectionManager and return the matching MoveMapBox or 0 if not found
      */
     MoveMapBox* getConnectedMoveBox (const Vector3& pPos) const;
+    void saveGridCnx (unsigned int MapId, unsigned int mapx, unsigned int mapy);
     void save (const char* pDir, const Vector3& pInnerLow, const Vector3& pInnerHigh, const Vector3& oriLow, const Vector3& oriHigh, unsigned int MapId, unsigned int x, unsigned int y, bool GenCoords);
     void load (const char* pDir, const char* tname);
   };

@@ -367,6 +367,38 @@ namespace VMAP
 
   const char MMAP_VERSION[] = "MMAP_1.00";
   extern std::string startCoordsPath;
+
+  void
+  MoveMapContainer::saveGridCnx (unsigned int MapId, unsigned int mapx, unsigned int mapy)
+  {
+  std::string nName;
+  for (unsigned int direction = 0; direction<4; ++direction)
+    {
+    int x_val = mapx;
+    int y_val = mapy;
+
+    switch (direction)
+      {
+      // grid coords are YX
+      case EXTEND_N :
+        x_val+=1;
+      break;
+      case EXTEND_S :
+        x_val-=1;
+      break;
+      case EXTEND_E :
+        y_val+=1;
+      break;
+      case EXTEND_W :
+        y_val-=1;
+      break;
+      }
+    char filename[15];
+    sprintf (filename, "grid_cnx_%03u_%02u_%02u_%02u_%02u.tmp", MapId, mapx, mapy, x_val, y_val);
+    nName = startCoordsPath + "/" + (std::string)filename;
+    ((MoveZoneContainerGenerator*)iMoveZoneContainer)->saveGridCnx(nName.c_str (),direction);
+    }
+  }
   
   void
   MoveMapContainer::save (const char* pDir, const Vector3& pInnerLow, const Vector3& pInnerHigh, const Vector3& oriLow, const Vector3& oriHigh, unsigned int MapId, unsigned int mapx, unsigned int mapy, bool GenCoords)
@@ -565,34 +597,6 @@ namespace VMAP
     iMoveZoneContainer->save(output);
 
     fclose (output);
-
-
-    for (unsigned int direction = 0; direction<4; ++direction)
-      {
-      int x_val = mapx;
-      int y_val = mapy;
-
-      switch (direction)
-        {
-        // grid coords are YX
-        case EXTEND_N :
-          x_val+=1;
-        break;
-        case EXTEND_S :
-          x_val-=1;
-        break;
-        case EXTEND_E :
-          y_val+=1;
-        break;
-        case EXTEND_W :
-          y_val-=1;
-        break;
-        }
-      char filename[15];
-      sprintf (filename, "grid_cnx_%03u_%02u_%02u_%02u_%02u.tmp", MapId, mapx, mapy, x_val, y_val);
-      nName = startCoordsPath + "/" + (std::string)filename;
-      ((MoveZoneContainerGenerator*)iMoveZoneContainer)->saveGridCnx(nName.c_str (),direction);
-      }
 
     printf ("Mmap saved (%u iNMoveMapBoxes and %u iNTreeNodes)\n", iNMoveMapBoxes, iNTreeNodes);
   }

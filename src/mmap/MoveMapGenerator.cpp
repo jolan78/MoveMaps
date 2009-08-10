@@ -258,6 +258,7 @@ namespace VMAP
     printf ("MoveZone Time = %d\n", diff);
 
     // Time to save this to disk
+    moveMapContainer->saveGridCnx (MapId, x, y);
     moveMapContainer->save (iMMapDirPath.c_str (), pInnerLow, pInnerHigh, oriLow, oriHigh, MapId, x, y, GenCoords);
     return true;
   }
