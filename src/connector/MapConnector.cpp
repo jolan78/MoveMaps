@@ -14,14 +14,6 @@ using namespace G3D;
 
 namespace VMAP
 {
-
-  // to sort Array<MovePortal*>
-/*  static bool MovePortalLT(MovePortal*const& elem1, MovePortal*const& elem2)
-    {
-    return elem1->getLow2() < elem2->getLow2();
-    }
-*/
-
   extern std::string startCoordsPath;
   extern std::string gDataDir;
   extern std::string gMMapDataDir;

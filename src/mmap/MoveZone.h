@@ -37,22 +37,19 @@ namespace VMAP
   
   class MovePortal
   {
-  private:
+  protected:
     unsigned int DestZoneID;
     MoveZone* DestZone;
     Vector2 center;
     float radius;
     unsigned int direction;
     unsigned int destGridX,destGridY;
-    Array<float> tempHeight;
   public:
-    MovePortal (Vector2 pCenter,float tHeight,unsigned int pDirection, MoveZone* MZ);
     MovePortal () {};
     ~MovePortal () {};
 
     void extend();
-    void extend(float tHeight);
-    void connect(MoveZoneContainer* MZContainer);
+
     void save(FILE* fp);
     void load(FILE* fp);
     void reconnect(Array<MoveZone*>& moveZoneArray);
@@ -64,10 +61,22 @@ namespace VMAP
     MoveZone* getDestination() { return DestZone; }
     unsigned int getDirection() { return direction; }
     bool isGridPortal() {return (destGridX!=0 || destGridY!=0); };
-    void setGridPortal(unsigned int gridX,unsigned int gridY) { destGridX=gridX; destGridY=gridY; };
     void setDestGridAndZone(unsigned int x,unsigned int y,unsigned int zoneID) {destGridX=x,destGridY=y,DestZoneID=zoneID; }
   };
 
+  class MovePortalGenerator : public MovePortal
+  {
+  private:
+    Array<float> tempHeight;
+  public:
+    MovePortalGenerator (Vector2 pCenter,float tHeight,unsigned int pDirection, MoveZone* MZ);
+    void extend(float tHeight);
+    void connect(MoveZoneContainer* MZContainer);
+    void setGridPortal(unsigned int gridX,unsigned int gridY) { destGridX=gridX; destGridY=gridY; };
+
+
+  };
+  
   class MoveZone
   {
   protected:

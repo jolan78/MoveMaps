@@ -10,7 +10,7 @@
 namespace VMAP
 {
 
-  MovePortal::MovePortal (Vector2 pCenter,float tHeight,unsigned int pDirection, MoveZone* MZ)
+  MovePortalGenerator::MovePortalGenerator (Vector2 pCenter,float tHeight,unsigned int pDirection, MoveZone* MZ)
     {
     center=pCenter;
     radius=0;
@@ -22,33 +22,15 @@ namespace VMAP
     direction=pDirection;
     }
 
-  
   void
-  MovePortal::extend()
+  MovePortalGenerator::extend(float tHeight)
     {
-    radius+=0.5;
-    switch (direction)
-      {
-      case EXTEND_N :
-      case EXTEND_S :
-        center.x+=0.5;
-        break;
-      case EXTEND_E :
-      case EXTEND_W :
-        center.y+=0.5;
-        break;
-      }
-    }
-
-  void
-  MovePortal::extend(float tHeight)
-    {
-    extend();
+    MovePortal::extend();
     tempHeight.append(tHeight);
     }
   
   void 
-  MovePortal::connect(MoveZoneContainer* MZContainer)
+  MovePortalGenerator::connect(MoveZoneContainer* MZContainer)
     {
     unsigned int i=0;
     MoveZone* prevMZ=NULL;
@@ -111,7 +93,24 @@ namespace VMAP
         }
       }
     }
-    
+
+  void
+  MovePortal::extend()
+    {
+    radius+=0.5;
+    switch (direction)
+      {
+      case EXTEND_N :
+      case EXTEND_S :
+        center.x+=0.5;
+        break;
+      case EXTEND_E :
+      case EXTEND_W :
+        center.y+=0.5;
+        break;
+      }
+    }
+
   void
   MovePortal::save(FILE* fp)
   {
@@ -283,7 +282,7 @@ namespace VMAP
     MoveZoneGenerator* prevMZ=NULL;
     Array<MoveZone*> MZArray;
     MoveZoneGenerator* curMZ=NULL;
-    MovePortal* CurrentPortal;
+    MovePortalGenerator* CurrentPortal;
     Array<MovePortal*> iPortals = iMoveZone->getPortalArray();
     Vector3 curpos,prevpos;
     bool previsportal=false;
@@ -356,8 +355,8 @@ namespace VMAP
               }
             else
               {
-              CurrentPortal= new MovePortal(Vector2(x,y),curpos.z, direction ,curMZ);// TODO : better manage z if needed
-              iPortals.append(CurrentPortal);
+              CurrentPortal= new MovePortalGenerator(Vector2(x,y),curpos.z, direction ,curMZ);// TODO : better manage z if needed
+              iPortals.append((MovePortal*)CurrentPortal);
               }
             }
           prevMZ=curMZ;
@@ -381,7 +380,7 @@ namespace VMAP
     Table<Vector2, Vector3> * PortalCells=iMoveZone->getPortalCell(direction);
     MoveZoneGenerator* prevMZ=NULL;
     MoveZoneGenerator* curMZ=NULL;
-    MovePortal* CurrentPortal;
+    MovePortalGenerator* CurrentPortal;
     Array<MovePortal*> iPortals = iMoveZone->getPortalArray();
     Vector3 curpos,prevpos;
     bool previsportal=false;
@@ -454,10 +453,10 @@ namespace VMAP
             }
           else
             {
-            CurrentPortal= new MovePortal(Vector2(x,y),curpos.z, direction ,curMZ);// TODO : better manage z if needed
+            CurrentPortal= new MovePortalGenerator(Vector2(x,y),curpos.z, direction ,curMZ);// TODO : better manage z if needed
             if (isGridPortal)
               CurrentPortal->setGridPortal(INT_MAX,INT_MAX);
-            iPortals.append(CurrentPortal);
+            iPortals.append((MovePortal*)CurrentPortal);
             }
           prevMZ=curMZ;
 
@@ -586,8 +585,8 @@ namespace VMAP
 
       const Vector3 basePos = zMoveMapBox->getBasePosition ();
       
-      MovePortal* CurrentPortal = NULL;
-      Array<MovePortal*> TempMovePortals;
+      MovePortalGenerator* CurrentPortal = NULL;
+      Array<MovePortalGenerator*> TempMovePortals;
       unsigned int prevTestHeight=0;
       
       
@@ -859,12 +858,6 @@ namespace VMAP
     return !broken;
     }
   
-  // to sort Array<MovePortal*>
-  static bool MovePortalLT(MovePortal*const& elem1, MovePortal*const& elem2)
-    {
-    return elem1->getCenter2().x < elem2->getCenter2().x || elem1->getCenter2().y < elem2->getCenter2().y;
-    }
-
   void
   MoveZone::save(FILE* fp)
   {
