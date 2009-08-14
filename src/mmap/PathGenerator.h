@@ -121,17 +121,23 @@ namespace VMAP
     void PrintPath()
       {
       printf("Opened %u, closed %u zones\n",_openMZTable.size(),closedMZId.size());
-      /*if (!Path.size())
+      
+      /*
+      printf("openZones :\n");
+      for (unsigned int i =0; i<openZones.size();++i)
+        printf("%u z%u s:%u\n",i,openZones[i]->moveZone->getIndex(),openZones[i]->score);
+      if (!Path.size())
         {
         printf("open:\n");
         for (Table<MovePortal*,PathNode*>::Iterator itr = _openMZTable.begin();itr != _openMZTable.end();++itr)
-          printf("%u (%u)\n",(*itr).value->moveZone->getIndex(),(*itr).key);
+          printf("%u s:%u (%u)\n",(*itr).value->moveZone->getIndex(),(*itr).value->score,(*itr).key);
         printf("closed:\n");
         for (unsigned int i=0;i<closedMZId.size();++i)
           printf("%u\n",closedMZId[i]);
         }
       for (unsigned int i=0;i<Path.size();++i)
-        printf("%f,%f,%f\n",Path[i].x,Path[i].y,Path[i].z);*/
+        printf("%f,%f,%f\n",Path[i].x,Path[i].y,Path[i].z);
+      */
       }
 
     float getRealDistance()
@@ -179,7 +185,7 @@ namespace VMAP
       _openMZTable.set(NULL/*PN->moveZone->getIndex()*/,PN);
 
       do {
-        PN = openZones.pop(); // shrink array, slower but safer, perhaps not necessary shrink now ?
+        PN = openZones.pop(false); // do not shrink array
         assert(PN->moveZone);
         closedMZId.push_back(PN->moveZone->getIndex());
         closedZones.push_back(PN);
@@ -276,7 +282,7 @@ namespace VMAP
                 destPN->distRemain=getFastDistance(portalCenter,pDest);
                 destPN->score=destPN->distDone + destPN->distRemain;
                 destPN->parent=PN;
-                openZones.remove(openZones.findIndex(destPN));// remove() is slower but fastRemove() will cause problems with insert position searching
+                openZones.remove(openZones.findIndex(destPN));// remove() is slower but fastRemove() will cause problems with insert position searching beacause it breaks sorting
                 
                 insertPathNode(destPN);
                 }
