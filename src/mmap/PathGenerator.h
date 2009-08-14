@@ -46,7 +46,6 @@ namespace VMAP
     const MoveZoneContainer* pMoveZoneContainer;
     
     Array<PathNode*> openZones;
-    Array<PathNode*> closedZones;
     // FIXME : temporary solution: we must add zones to open list if we pass thru a different portal
     //Table<unsigned int,PathNode*> openMZTable;
     Table<MovePortal*,PathNode*> _openMZTable;
@@ -112,7 +111,6 @@ namespace VMAP
     ~PathGenerator()
       {
       openZones.deleteAll();
-      closedZones.deleteAll();
       }
 
     void setDistanceCalc(unsigned int dcalc) { pDistCalc=dcalc; }
@@ -188,7 +186,6 @@ namespace VMAP
         PN = openZones.pop(false); // do not shrink array
         assert(PN->moveZone);
         closedMZId.push_back(PN->moveZone->getIndex());
-        closedZones.push_back(PN);
 
         if (PN->moveZone == destMZ)
           {
