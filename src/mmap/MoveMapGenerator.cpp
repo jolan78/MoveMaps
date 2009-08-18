@@ -61,11 +61,11 @@ namespace VMAP
   {
     debugAssert (pMoveLayerArray.size () > 0);
 
-    AABSPTree<MoveMapBox*> *tree;
+    Array<MoveMapBox*> *tree;
     Table<MoveLayer*, MoveMapBox*> layerBoxMapping;
     MoveLayerConnectionPointsContainer moveLayerConnectionPointsContainer;
 
-    tree = new AABSPTree<MoveMapBox*>();
+    tree = new Array<MoveMapBox*>();
 
     for (int i = 0; i < pMoveLayerArray.size (); ++i)
       {
@@ -98,12 +98,10 @@ namespace VMAP
               }
           }
 
-        tree->insert (currentMoveMapBox);
+        tree->push_back (currentMoveMapBox);
       }
-    tree->balance ();
     Table<MoveMapBox*, unsigned short> boxPositionsTable;
     MoveMapContainer* moveMapContainer = new MoveMapContainer (tree, boxPositionsTable);
-    moveMapContainer->fillMoveMapConnectionManagerArray (moveLayerConnectionPointsContainer, layerBoxMapping, boxPositionsTable);
     delete tree;
     return (moveMapContainer);
   }
@@ -159,9 +157,6 @@ namespace VMAP
     Vector3 oriLow = Vector3 (inf (), inf (), inf ());
     Vector3 oriHigh = Vector3 (-inf (), -inf (), -inf ());
 
-    AABSPTree<Triangle>* resultTree = new AABSPTree<Triangle > ();
-    std::auto_ptr< AABSPTree<Triangle> > rt_ptr (resultTree);
-
     Array<ModelContainer*> McList;
 
     fillMCList (McList, mapId, x, y, low, high, oriLow, oriHigh);
@@ -207,13 +202,13 @@ namespace VMAP
     printf("phigh     %f %f\n",phigh.x,phigh.z);*/
 
     VectorMoveMap* vectorMoveMap = new VectorMoveMap (mapId, x, y, gridMapManager, iVMapManager);
-    return calculate (vectorMoveMap, innerLow, innerHigh, plow, phigh, poriLow, poriHigh, resultTree, mapId, x, y, GenCoords);
+    return calculate (vectorMoveMap, innerLow, innerHigh, plow, phigh, poriLow, poriHigh, mapId, x, y, GenCoords);
   }
 
   //================================================
 
   bool
-  MoveMapGenerator::calculate (VectorMoveMap* pVectorMoveMap, const Vector3& pInnerLow, const Vector3& pInnerHigh, const Vector3& pLow, const Vector3& pHigh, const Vector3& oriLow, const Vector3& oriHigh, AABSPTree<Triangle>* pResultTree, unsigned int MapId, unsigned int x, unsigned int y, bool GenCoords)
+  MoveMapGenerator::calculate (VectorMoveMap* pVectorMoveMap, const Vector3& pInnerLow, const Vector3& pInnerHigh, const Vector3& pLow, const Vector3& pHigh, const Vector3& oriLow, const Vector3& oriHigh, unsigned int MapId, unsigned int x, unsigned int y, bool GenCoords)
   {
     CalcHelper calcHelper = CalcHelper ();
     calcHelper.iLow = pLow;
@@ -237,8 +232,6 @@ namespace VMAP
     calcHelper.iHightStoreMap->fill (calcHelper.iHightStoreMap->getMaxValue ());
 
     calcHelper.iBounds = AABox (pLow, pHigh); // box to check if we are in the horizontal range
-    //calcHelper.iBounds = AABox (oriLow, oriHigh); // box to check if we are in the horizontal range
-    calcHelper.iTree = pResultTree;
 
     calcHelper.calcHeight = 0;
     calcHelper.getHeight = 0;

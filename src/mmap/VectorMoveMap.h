@@ -1,8 +1,6 @@
 #ifndef _VECTORMOVEMAP_H
 #define _VECTORMOVEMAP_H
 
-#include "AABSPTree.h"
-
 #include <G3D/Vector3.h>
 #include <G3D/Triangle.h>
 #include <G3D/Array.h>
@@ -149,7 +147,6 @@ namespace VMAP
     PositionControlArray<unsigned short,10>* iMaxYPosInAccessPoints;
     PositionControlArray<unsigned short,10>* iMinYPosInAccessPoints;
      */
-    AABSPTree<Triangle>* iTree;
     AABox iBounds;
 
     bool testPos1Ok;

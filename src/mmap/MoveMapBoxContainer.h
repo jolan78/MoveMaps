@@ -1,10 +1,7 @@
 #ifndef _MOVEMAPBOXCONTAINER_H_
 #define _MOVEMAPBOXCONTAINER_H_
 
-#include "AABSPTree.h"
-
 #include "ShortVector.h"
-#include "TreeNode.h"
 #include "VMapTools.h"
 #include "MoveMapBox.h"
 #include "MoveZone.h"
@@ -200,20 +197,12 @@ namespace VMAP
     unsigned char* iMapBase;
     MoveMapBox* iMoveMapBoxArray;
     unsigned int iNMoveMapBoxes;
-    TreeNode *iTreeNodes;
-    unsigned int iNTreeNodes;
     MoveMapConnectionManager* iMoveMapConnectionManager;
     MoveZoneContainer* iMoveZoneContainer;
     float iGranularity;
     AABox iBounds;
     Vector3 iPosition;
   private:
-
-    inline TreeNode*
-    getTreeNodes () const
-    {
-      return iTreeNodes;
-    }
 
     inline MoveMapBox*
     getMoveMapBoxArray () const
@@ -228,28 +217,14 @@ namespace VMAP
     }
 
     void
-    setTreeNode (const TreeNode& pTreeNode, int pos)
-    {
-      iTreeNodes[pos] = pTreeNode;
-    }
-
-    void
     setMoveMapBox (const MoveMapBox& pMoveMapBox, int pos)
     {
       iMoveMapBoxArray[pos] = pMoveMapBox;
     }
-    void fillContainer (const AABSPTree<MoveMapBox *>::Node& pNode, int &pMoveMapBoxPos, int &pTreeNodePos, Vector3& pLo, Vector3& pHi, Vector3& pFinalLo, Vector3& pFinalHi, Table<MoveMapBox*, unsigned short>& pBoxPositionsTable);
-    void
-    countMoveMapBoxesAndNode (AABSPTree<MoveMapBox*>::Node& pNode, int& nBoxes, int& nNodes);
-
-    /*void intersect(const G3D::Ray& pRay, float& pMaxDist, bool pStopAtFirstHit, G3D::Vector3& pOutLocation, G3D::Vector3& pOutNormal) const;
-    bool intersect(const G3D::Ray& pRay, float& pMaxDist) const;
-    template<typename RayCallback>
-    void intersectRay(const G3D::Ray& ray, RayCallback& intersectCallback, float& distance, bool pStopAtFirstHit, bool intersectCallbackIsFast = false);*/
-    //bool operator==(const MoveMapContainer& pSm2) const;
+    void fillContainer (Array<MoveMapBox*>* pBoxTree, int &pMoveMapBoxPos, Vector3& pLo, Vector3& pHi, Vector3& pFinalLo, Vector3& pFinalHi, Table<MoveMapBox*, unsigned short>& pBoxPositionsTable);
   public:
     MoveMapContainer ();
-    MoveMapContainer (AABSPTree<MoveMapBox*>* pBoxTree, Table<MoveMapBox*, unsigned short>& pBoxPositionsTable);
+    MoveMapContainer (Array<MoveMapBox*>* pBoxTree, Table<MoveMapBox*, unsigned short>& pBoxPositionsTable);
     ~MoveMapContainer ();
 
     void fillMoveMapConnectionManagerArray (const MoveLayerConnectionPointsContainer& pMoveLayerConnectionPointsContainer, const Table<MoveLayer*, MoveMapBox*>& pLayerMapBoxTable, const Table<MoveMapBox*, unsigned short>& pBoxPositionsTable);
@@ -310,12 +285,6 @@ namespace VMAP
     setMapValue (MoveMapBox* pMoveBox, const Vector3& pPos, unsigned int pVal)
     {
       pMoveBox->set (getMapBaseAdr (), pVal, pPos.x, pPos.y);
-    }
-
-    inline unsigned int
-    getNTreeNodes () const
-    {
-      return (iNTreeNodes);
     }
 
     inline unsigned int

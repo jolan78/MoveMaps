@@ -386,7 +386,6 @@ namespace VMAP
             resultPos2.z -= pCalcHelper.iLow.z;
             Vector3 startPos = Vector3 (pPos.x - pCalcHelper.iLow.x, pPos.y, pPos.z - pCalcHelper.iLow.z);
             Triangle t = Triangle (startPos, resultPos1, resultPos2);
-            pCalcHelper.iTree->insert (t);
           }
       }
   }

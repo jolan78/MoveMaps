@@ -1,5 +1,3 @@
-#include "AABSPTree.h"
-
 #include <G3D/G3DAll.h>
 
 #include "MoveMapBoxContainer.h"
@@ -225,7 +223,7 @@ namespace VMAP
   MoveMapContainer::MoveMapContainer ()
   {
     iMoveMapBoxArray = NULL;
-    iTreeNodes = NULL;
+    //iTreeNodes = NULL;
     iMoveMapConnectionManager = NULL;
     iMoveZoneContainer = NULL;
   }
@@ -235,7 +233,6 @@ namespace VMAP
   MoveMapContainer::~MoveMapContainer ()
   {
     if (iMoveMapBoxArray != NULL) delete[] iMoveMapBoxArray;
-    if (iTreeNodes != NULL) delete[] iTreeNodes;
     if (iMoveMapConnectionManager != NULL) delete iMoveMapConnectionManager;
     if (iMoveZoneContainer != NULL) delete iMoveZoneContainer;
   }
@@ -247,19 +244,14 @@ namespace VMAP
   We will need that table later on.
    */
 
-  MoveMapContainer::MoveMapContainer (AABSPTree<MoveMapBox*>* pBoxTree, Table<MoveMapBox*, unsigned short>& pBoxPositionsTable)
+  MoveMapContainer::MoveMapContainer (Array<MoveMapBox*>* pBoxTree, Table<MoveMapBox*, unsigned short>& pBoxPositionsTable)
   {
-    int nMoveMapBoxes, nNodes;
-    nMoveMapBoxes = nNodes = 0;
-
-    countMoveMapBoxesAndNode (*pBoxTree->root, nMoveMapBoxes, nNodes);
-    iNMoveMapBoxes = nMoveMapBoxes;
-    iNTreeNodes = nNodes;
-    iMoveMapBoxArray = new MoveMapBox[iNMoveMapBoxes];
-    iTreeNodes = new TreeNode[iNTreeNodes];
     
-    int moveMapBoxPos, treeNodePos;
-    moveMapBoxPos = treeNodePos = 0;
+    iNMoveMapBoxes = pBoxTree->size();
+    iMoveMapBoxArray = new MoveMapBox[iNMoveMapBoxes];
+    
+    int moveMapBoxPos;
+    moveMapBoxPos = 0;
 
     Vector3 lo = Vector3 (inf (), inf (), inf ());
     Vector3 hi = Vector3 (-inf (), -inf (), -inf ());
@@ -267,27 +259,8 @@ namespace VMAP
     finalLo = lo;
     finalHi = hi;
 
-    fillContainer (*pBoxTree->root, moveMapBoxPos, treeNodePos, lo, hi, finalLo, finalHi, pBoxPositionsTable);
+    fillContainer (pBoxTree, moveMapBoxPos, lo, hi, finalLo, finalHi, pBoxPositionsTable);
     setBounds (finalLo, finalHi);
-  }
-
-
-  //=============================================================
-
-  void
-  MoveMapContainer::countMoveMapBoxesAndNode (AABSPTree<MoveMapBox*>::Node& pNode, int& nBoxes, int& nNodes)
-  {
-    nBoxes += pNode.valueArray.size ();
-    ++nNodes;
-
-    if (pNode.child[0] != 0)
-      {
-        countMoveMapBoxesAndNode (*pNode.child[0], nBoxes, nNodes);
-      }
-    if (pNode.child[1] != 0)
-      {
-        countMoveMapBoxesAndNode (*pNode.child[1], nBoxes, nNodes);
-      }
   }
 
   //=============================================================
@@ -297,20 +270,15 @@ namespace VMAP
   We will need that table later on.
    */
   void
-  MoveMapContainer::fillContainer (const AABSPTree<MoveMapBox *>::Node& pNode, int &pMoveMapBoxPos, int &pTreeNodePos, Vector3& pLo, Vector3& pHi, Vector3& pFinalLo, Vector3& pFinalHi, Table<MoveMapBox*, unsigned short>& pBoxPositionsTable)
+  MoveMapContainer::fillContainer (Array<MoveMapBox*>* pBoxTree, int &pMoveMapBoxPos, Vector3& pLo, Vector3& pHi, Vector3& pFinalLo, Vector3& pFinalHi, Table<MoveMapBox*, unsigned short>& pBoxPositionsTable)
   {
-    TreeNode treeNode = TreeNode (pNode.valueArray.size (), pMoveMapBoxPos);
-    treeNode.setSplitAxis (pNode.splitAxis);
-    treeNode.setSplitLocation (pNode.splitLocation);
-    int currentTreeNodePos = pTreeNodePos++;
-
     Vector3 lo = Vector3 (inf (), inf (), inf ());
     Vector3 hi = Vector3 (-inf (), -inf (), -inf ());
 
-    for (int i = 0; i < pNode.valueArray.size (); i++)
+    for (int i = 0; i < pBoxTree->size (); i++)
       {
-        G3D::_AABSPTree::Handle<MoveMapBox *>* h = pNode.valueArray[i];
-        MoveMapBox* m = h->value;
+        
+        MoveMapBox* m = (*pBoxTree)[i];
         setMoveMapBox (*m, pMoveMapBoxPos);
         pBoxPositionsTable.set (m, pMoveMapBoxPos);
         ++pMoveMapBoxPos;
@@ -322,22 +290,8 @@ namespace VMAP
         pFinalHi = pFinalHi.max (hi);
       }
 
-    if (pNode.child[0] != 0)
-      {
-        treeNode.setChildPos (0, pTreeNodePos);
-        fillContainer (*pNode.child[0], pMoveMapBoxPos, pTreeNodePos, lo, hi, pFinalLo, pFinalHi, pBoxPositionsTable);
-      }
-    if (pNode.child[1] != 0)
-      {
-        treeNode.setChildPos (1, pTreeNodePos);
-        fillContainer (*pNode.child[1], pMoveMapBoxPos, pTreeNodePos, lo, hi, pFinalLo, pFinalHi, pBoxPositionsTable);
-      }
-
     pLo = pLo.min (lo);
     pHi = pHi.max (hi);
-
-    treeNode.setBounds (lo, hi);
-    setTreeNode (treeNode, currentTreeNodePos);
   }
 
   //=============================================================
@@ -563,42 +517,11 @@ namespace VMAP
           }
       }
 
-    fwrite (&iNTreeNodes, 4, 1, output);
-
-    for (unsigned int i = 0; i < iNTreeNodes; ++i)
-      {
-        TreeNode *iTmp = &iTreeNodes[i];
-        AABox pBox;
-        unsigned int ui;
-        float f;
-        int it;
-        unsigned short us;
-        iTmp->getBounds (pBox);
-        fwrite (&pBox.low ().x, 4, 1, output);
-        fwrite (&pBox.low ().y, 4, 1, output);
-        fwrite (&pBox.low ().z, 4, 1, output);
-        fwrite (&pBox.high ().x, 4, 1, output);
-        fwrite (&pBox.high ().y, 4, 1, output);
-        fwrite (&pBox.high ().z, 4, 1, output);
-        ui = iTmp->getStartPosition ();
-        fwrite (&ui, 4, 1, output);
-        f = iTmp->getSplitLocation ();
-        fwrite (&f, 4, 1, output);
-        ui = iTmp->getSplitAxis ();
-        fwrite (&ui, 4, 1, output);
-        it = iTmp->getChildval (0);
-        fwrite (&it, 4, 1, output);
-        it = iTmp->getChildval (1);
-        fwrite (&it, 4, 1, output);
-        us = iTmp->getNValues ();
-        fwrite (&us, 2, 1, output);
-      }
-
     iMoveZoneContainer->save(output);
 
     fclose (output);
 
-    printf ("Mmap saved (%u iNMoveMapBoxes and %u iNTreeNodes)\n", iNMoveMapBoxes, iNTreeNodes);
+    printf ("Mmap saved (%u iNMoveMapBoxes)\n", iNMoveMapBoxes);
   }
 
   void
@@ -652,45 +575,6 @@ namespace VMAP
           }
         currentMoveMapBox->setBounds (pBox);
         iMoveMapBoxArray[i] = *currentMoveMapBox;
-      }
-    fread (&iNTreeNodes, 4, 1, input);
-    printf ("Red iNTreeNodes : %u\n", iNTreeNodes);
-    iTreeNodes = new TreeNode[iNTreeNodes];
-    for (unsigned int i = 0; i < iNTreeNodes; ++i)
-      {
-        TreeNode iTmp;
-        unsigned int sp, ax;
-        float sl;
-        int ch0, ch1;
-        unsigned short nval;
-        Vector3 v1;
-        Vector3 v2;
-        fread (&v1.x, 4, 1, input);
-        fread (&v1.y, 4, 1, input);
-        fread (&v1.z, 4, 1, input);
-        fread (&v2.x, 4, 1, input);
-        fread (&v2.y, 4, 1, input);
-        fread (&v2.z, 4, 1, input);
-        AABox pBox (v1, v2);
-
-
-        fread (&sp, 4, 1, input);
-        fread (&sl, 1, 4, input);
-        fread (&ax, 4, 1, input);
-        fread (&ch0, 4, 1, input);
-        fread (&ch1, 4, 1, input);
-        fread (&nval, 2, 1, input);
-
-        TreeNode* CurrentNode = new TreeNode (nval, sp);
-        CurrentNode->setStartPosition (sp);
-        CurrentNode->setSplitLocation (sl);
-        CurrentNode->setSplitAxis (Vector3::Axis (ax));
-        CurrentNode->setChildval (0, ch0);
-        CurrentNode->setChildval (1, ch1);
-        CurrentNode->setBounds (pBox);
-
-        iTreeNodes[i] = *CurrentNode;
-
       }
 
       iMoveZoneContainer = new MoveZoneContainer();
