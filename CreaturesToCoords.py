@@ -20,7 +20,7 @@ MangosDbInfo=MangosDatabaseInfo.split(";")
 try:
     MangosDb = MySQLdb.connect(host=MangosDbInfo[0], port=int(MangosDbInfo[1]), user=MangosDbInfo[2], passwd=MangosDbInfo[3],db=MangosDbInfo[4], init_command='SET NAMES utf8')
 except:
-    print "Enable to connect to database on Host "+'"'+MangosDbInfo[0]+'" with:'
+    print "Unable to connect to database on Host "+'"'+MangosDbInfo[0]+'" with:'
     print ' Port: '+MangosDbInfo[1]
     print ' Username: '+MangosDbInfo[2]
     print ' Password: '+MangosDbInfo[3]

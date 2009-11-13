@@ -56,12 +56,13 @@ def updateList(path,sorting):
     if sorting:
         osdones=sortbysize(osdones)
     for one in osdones:
-        if one=='.svn':
+        try:
+            name=one.split(".")[0]
+            imap=int(name.split("_")[0])
+            if imap==exportmap:
+                ilist.append(GetSplit(name,0))
+        except:
             continue
-        name=one.split(".")[0]
-        imap=int(name.split("_")[0])
-        if imap==exportmap:
-            ilist.append(GetSplit(name,0))
     return ilist
 
 def oneleft():
@@ -81,12 +82,15 @@ for exportmap in processmaplist:
             gridlist.append(GetSplit(f[0],0))
     fulllist = os.listdir(rootpath+StrtCoords)
     for one in fulllist:
-        f=one.split(".")
-        ext=f[1]
-        imap=int(f[0].split("_")[0])
-        if ext=="txt" and imap==exportmap:
-            gridlist.append(GetSplit(f[0],0))
-    
+        try:
+            f=one.split(".")
+            ext=f[1]
+            imap=int(f[0].split("_")[0])
+            if ext=="txt" and imap==exportmap:
+                gridlist.append(GetSplit(f[0],0))
+        except:
+            continue
+
     goon=1
     past=0
     dones=updateList(rootpath+mmaps,0)
