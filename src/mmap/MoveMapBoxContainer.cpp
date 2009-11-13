@@ -347,9 +347,10 @@ namespace VMAP
         y_val-=1;
       break;
       }
-    char filename[15];
+    char filename[1024];
     sprintf (filename, "grid_cnx_%03u_%02u_%02u_%02u_%02u.tmp", MapId, mapx, mapy, x_val, y_val);
-    nName = startCoordsPath + "/" + (std::string)filename;
+    printf("Processing %s", filename);
+    nName = startCoordsPath + "/" + std::string(filename);
     ((MoveZoneContainerGenerator*)iMoveZoneContainer)->saveGridCnx(nName.c_str (),direction);
     }
   }
